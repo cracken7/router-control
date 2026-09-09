@@ -73,6 +73,14 @@ EP: `Internet_QoS_speed_lua.lua` · OBJ: `OBJ_QOSQP_ID` · instances DEV.QOS.QP1
 | PartialConformingAction | Drop | partially conforming |
 | NonConformingAction | Drop | out-of-profile ⇒ drop |
 
+**⚠️ FIRMWARE LOCK (verified empirically + in page JS):** on this unit (EG1T13 ET carrier
+build) ALL policer instances are hard-locked by the firmware itself:
+`fillDataByCustom` handler contains `instArr.push({instID:'DEV.QOS.QP2'}); instArr.push({instID:'DEV.QOS.QP3'})`
+and disables every control of QP2/QP3 plus the QP1 template (`template_qosSpeed_0`).
+Writes to QP Enable return `SUCC` but never change state (tested variants: bare toggle,
+full form fields, hidden-action trio — all no-ops). Reads work fine. => Treat this
+section as **read-only on carrier firmware**.
+
 ## 5) Traffic Shaping — Internet_QoS_shaper_t.lp
 EP: `Internet_QoS_shaper_lua.lua` · OBJ: `OBJ_QOSSHAPER_CONF_ID` (empty on this unit — no shaper instances yet)
 
@@ -93,10 +101,13 @@ QCDownlimit2 "ana" (60:0f:6b:96:e4:5f, 4000000, Enable=0)
 | DestMAC | target host MAC (lowercase, colon-separated) |
 | IPDest + IPDestMask | target host IP (0.0.0.0 when MAC mode) |
 | DestDevIF | LAN port where host sits: `DEV.BRIDGING.BR1.BRPORTn` |
-| DownBandwidth | cap in **kbps** (8192 = 8 Mbit/s) |
+| DownBandwidth | cap in **bps** (form range 8192~100000000; 4000000 = 4 Mbit/s) |
+
+**Write verified live on this section too:** QCDownlimit1 Enable 0→1→0 round-trip PASS.
 
 ## Units cheat-sheet
-- Policer CommittedRate = bps. DownLimit DownBandwidth = kbps. Burst = bytes.
+- All bandwidth values on this firmware are **bps**: Policer CommittedRate = bps,
+  DownLimit DownBandwidth = bps (both global and per-host rules). Burst = bytes.
 
 ## Verified write example (live, round-trip PASS)
 ```

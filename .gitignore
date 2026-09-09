@@ -8,3 +8,4 @@ scripts/logged_main.html
 # python
 __pycache__/
 *.pyc
+app/__pycache__/

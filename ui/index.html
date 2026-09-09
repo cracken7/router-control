@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة تحكم الراوتر — ZTE H168N</title>
+<style>
+:root{
+  --bg:#0b0f1a; --card:rgba(255,255,255,.055); --card2:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10); --tx:#e8ecf4; --mut:#93a0b4;
+  --acc:#4cc9f0; --ok:#2ee6a8; --bad:#ff5d73; --warn:#ffc857;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);
+  min-height:100vh;
+  background-image:
+    radial-gradient(900px 500px at 85% -10%, rgba(76,201,240,.14), transparent 60%),
+    radial-gradient(700px 420px at -10% 30%, rgba(157,78,221,.13), transparent 60%),
+    radial-gradient(600px 400px at 50% 110%, rgba(46,230,168,.08), transparent 60%);
+}
+.wrap{max-width:1060px;margin:0 auto;padding:22px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;
+  background:linear-gradient(135deg,rgba(76,201,240,.25),rgba(157,78,221,.25));border:1px solid var(--line)}
+h1{font-size:19px;font-weight:700}
+.sub{color:var(--mut);font-size:12px;margin-top:2px}
+.status-pill{margin-inline-start:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);
+  background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:99px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 8px var(--bad)}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+nav{display:flex;gap:9px;margin:18px 0 22px;flex-wrap:wrap}
+nav button{background:var(--card);border:1px solid var(--line);color:var(--mut);padding:9px 18px;
+  border-radius:12px;cursor:pointer;font-size:13.5px;font-family:inherit;transition:.18s}
+nav button:hover{color:var(--tx);border-color:rgba(255,255,255,.22)}
+nav button.active{background:linear-gradient(135deg,rgba(76,201,240,.22),rgba(157,78,221,.22));
+  color:var(--tx);border-color:rgba(76,201,240,.45)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;
+  backdrop-filter:blur(14px)}
+.card h2{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:13px}
+.stat{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat .v{font-size:22px;font-weight:700;margin-top:5px}
+.stat .l{color:var(--mut);font-size:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:none}
+.row .name{font-size:13.5px}
+.row .meta{color:var(--mut);font-size:11.5px;margin-top:3px;direction:ltr;text-align:left}
+.switch{position:relative;width:46px;height:25px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,.14);border-radius:99px;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;inset-inline-start:3px;transition:.2s}
+.switch input:checked + .slider{background:linear-gradient(135deg,#2ee6a8,#4cc9f0)}
+.switch input:checked + .slider:before{transform:translateX(-21px)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:var(--mut);font-weight:600;text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.03)}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;border:1px solid var(--line)}
+.badge.on{color:var(--ok);border-color:rgba(46,230,168,.4);background:rgba(46,230,168,.08)}
+.badge.off{color:var(--mut)}
+.mono{direction:ltr;font-family:Consolas,monospace;font-size:11.5px;color:var(--mut)}
+.btn{background:linear-gradient(135deg,#4cc9f0,#9d4edd);border:none;color:#fff;padding:8px 16px;
+  border-radius:10px;cursor:pointer;font-family:inherit;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:wait}
+.note{color:var(--mut);font-size:12px;line-height:1.9}
+.toast{position:fixed;bottom:22px;inset-inline-start:50%;transform:translateX(50%);background:var(--card2);
+  border:1px solid var(--line);backdrop-filter:blur(12px);padding:11px 22px;border-radius:13px;font-size:13px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.show{opacity:1}
+.toast.err{border-color:rgba(255,93,115,.5);color:#ffb3bd}
+.empty{color:var(--mut);font-size:13px;padding:16px;text-align:center}
+.subnav{display:flex;gap:7px;margin-bottom:15px;flex-wrap:wrap}
+.subnav button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:6px 14px;
+  border-radius:9px;cursor:pointer;font-size:12px;font-family:inherit}
+.subnav button.active{color:var(--acc);border-color:rgba(76,201,240,.45)}
+.hidden{display:none}
+.load{text-align:center;color:var(--mut);padding:26px;font-size:13px}
+input.rate{background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--tx);border-radius:8px;
+  padding:6px 10px;width:120px;font-family:inherit;direction:ltr;text-align:left}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">📡</div>
+    <div>
+      <h1>لوحة تحكم الراوتر</h1>
+      <div class="sub">ZTE ZXHN H168N V3.5 — 192.168.1.1</div>
+    </div>
+    <div class="status-pill"><span class="dot" id="dot"></span><span id="connTxt">جارٍ الاتصال…</span></div>
+  </header>
+
+  <nav>
+    <button data-view="dash" class="active">الرئيسية</button>
+    <button data-view="qos">تحكم QoS</button>
+    <button data-view="devices">الأجهزة المتصلة</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <section id="view-dash">
+    <div class="grid">
+      <div class="stat"><div class="l">محرك QoS</div><div class="v" id="stQos">—</div></div>
+      <div class="stat"><div class="l">الأجهزة المتصلة</div><div class="v" id="stDev">—</div></div>
+      <div class="stat"><div class="l">حد التنزيل العام</div><div class="v" id="stDown">—</div></div>
+      <div class="stat"><div class="l">وقت الراوتر</div><div class="v" id="stTime" style="font-size:15px">—</div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>⚡ إجراءات سريعة</h2>
+      <div class="row">
+        <div><div class="name">تشغيل / إيقاف محرك QoS</div>
+        <div class="note">بيغيّر إعدادات الراوتر الحقيقية فوراً (Apply + قراءة تأكيد)</div></div>
+        <label class="switch"><input type="checkbox" id="swQos" onchange="toggleQos(this)"><span class="slider"></span></label>
+      </div>
+      <div class="row">
+        <div><div class="name">تحديث البيانات</div><div class="note">قراءة حية من الراوتر</div></div>
+        <button class="btn" onclick="loadDash()">تحديث</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- QOS -->
+  <section id="view-qos" class="hidden">
+    <div class="subnav">
+      <button data-q="basic" class="active">عام</button>
+      <button data-q="classification">التصنيف</button>
+      <button data-q="congestion">إدارة الازدحام</button>
+      <button data-q="policing">Traffic Policing</button>
+      <button data-q="shaping">Traffic Shaping</button>
+      <button data-q="downlimit">حد التنزيل</button>
+    </div>
+    <div id="qosBody"></div>
+  </section>
+
+  <!-- DEVICES -->
+  <section id="view-devices" class="hidden">
+    <div class="card">
+      <h2>📱 الأجهزة المتصلة</h2>
+      <div id="devBody" class="load">جارٍ التحميل…</div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const AR = {
+  Enable:"مُفعّل", Alias:"الاسم", _InstID:"المعرّف", DownBandwidth:"حد التنزيل (kbps)",
+  CommittedRate:"السرعة (bps)", CommittedBurstSize:"البيرست (bytes)", MeterType:"نوع الميتر",
+  NonConformingAction:"إجراء التجاوز", ConformingAction:"إجراء الالتزام", PartialConformingAction:"التزام جزئي",
+  PeakRate:"السرعة القصوى", PeakBurstSize:"بيرست أقصى", ExcessBurstSize:"بيرست زائد",
+  ManaType:"نوع الإدارة", DestMAC:"MAC الجهاز", DestDevIF:"المنفذ", IPDest:"IP", IPDestMask:"القناع",
+  Order:"الأولوية", AllInterface:"كل الواجهات", DevIn:"الواجهة", MACSrc:"MAC مصدر", MACDest:"MAC وجهة",
+  IPSrc:"IP مصدر", IPDest:"IP وجهة", SrcPort:"منفذ مصدر", DestPort:"منفذ وجهة", VlanPrio:"VLAN Prio",
+  VlanPrioMark:"VLAN Mark", L2Protocol:"L2", L3ProtocolList:"L3", TcpAck:"TCP ACK", TrafficClass:"فئة",
+  PolicerQueue:"البوليسر", DSCPCheck:"DSCP فحص", DscpMark:"DSCP تعليم", VlanID:"VLAN ID",
+  SchedulerAlgorithm:"خوارزمية الجدولة", QueueNum:"رقم الطابور", DefaultQueue:"طابور افتراضي", NeedStats:"إحصائيات"
+};
+const SKIP = new Set(["DataHasBeenGot","_InstNum"]);
+let qosCache = {};
+
+function toast(msg, err){
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.className="toast", 2600);
+}
+async function jget(u){ const r = await fetch(u); return r.json(); }
+async function jpost(u, b){
+  const r = await fetch(u, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b||{})});
+  return r.json();
+}
+function fmtRate(v){ if(v===undefined||v===null||v==="") return "—"; v=+v;
+  if(v>=1e6) return (v/1e6).toFixed(0)+" Mbps"; if(v>=1e3) return (v/1e3).toFixed(0)+" Kbps"; return v+" bps"; }
+
+// ---------- status / dashboard ----------
+async function checkStatus(){
+  try{
+    const s = await jget("/api/status");
+    $("#dot").classList.toggle("on", !!s.ok);
+    $("#connTxt").textContent = s.ok ? "متصل بالراوتر" : "غير متصل";
+  }catch(e){ $("#connTxt").textContent = "السيرفر غير شغال"; }
+}
+async function loadDash(){
+  $("#stQos").textContent = "…"; $("#stDev").textContent="…"; $("#stDown").textContent="…"; $("#stTime").textContent="…";
+  try{
+    const d = await jget("/api/dashboard");
+    $("#stQos").textContent = d.qos_enabled==="1" ? "مُفعّل ✅" : (d.qos_enabled==="0" ? "متوقف ⛔" : "—");
+    $("#stDev").textContent = d.devices_count ?? "—";
+    const db = d.downlimit || {};
+    const bw = +db.DownBandwidth || 0;
+    $("#stDown").textContent = (db.Enable==="1" && bw>0) ? fmtRate(bw) : "بدون حد";
+    $("#stTime").textContent = d.router_time || "—";
+    $("#swQos").checked = d.qos_enabled==="1";
+  }catch(e){ toast("فشل تحميل لوحة البيانات: "+e.message, true); }
+}
+async function toggleQos(el){
+  el.disabled = true;
+  try{
+    const r = await jpost("/api/qos/basic", {action:"Apply", fields:{Enable: el.checked ? "1":"0"}});
+    if(r.ok){ toast(el.checked? "تم تشغيل QoS ✅":"تم إيقاف QoS ⛔"); loadDash(); }
+    else { toast("الراوتر رفض: "+r.error, true); el.checked = !el.checked; }
+  }catch(e){ toast("خطأ: "+e.message, true); el.checked = !el.checked; }
+  el.disabled = false;
+}
+
+// ---------- devices ----------
+async function loadDevices(){
+  const b = $("#devBody"); b.className="load"; b.textContent="جارٍ التحميل…";
+  try{
+    const d = await jget("/api/devices");
+    if(!d.devices.length){ b.className="empty"; b.textContent="لا أجهزة"; return; }
+    b.className="";
+    b.innerHTML = "<table><tr><th>الجهاز</th><th>IP</th><th>MAC</th><th>الاتصال</th></tr>" +
+      d.devices.map(x=>`<tr><td>${esc(x.name)}</td><td class="mono">${esc(x.ip)}</td>
+        <td class="mono">${esc(x.mac)}</td><td>${x.type==="wifi"?"📶 واي فاي":x.type==="lan"?"🔌 كابل":"💾 USB"}</td></tr>`).join("") + "</table>";
+  }catch(e){ b.textContent="خطأ: "+e.message; }
+}
+function esc(s){ return (s??"").toString().replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
+
+// ---------- QoS views ----------
+document.querySelectorAll(".subnav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".subnav button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); renderQos(b.dataset.q);
+});
+async function renderQos(sec){
+  const body = $("#qosBody");
+  body.innerHTML = '<div class="load">جارٍ القراءة من الراوتر…</div>';
+  if(sec==="downlimit"){
+    try{
+      const [g, r] = await Promise.all([jget("/api/qos/downlimit_global"), jget("/api/qos/downlimit_rules")]);
+      qosCache.downlimit_global=g; qosCache.downlimit_rules=r;
+      body.innerHTML = downlimitHTML(g, r); wireDownlimit(); wireToggles(sec);
+    }catch(e){ body.innerHTML='<div class="empty">خطأ: '+esc(e.message)+'</div>'; }
+    return;
+  }
+  try{
+    const d = await jget("/api/qos/"+sec);
+    qosCache[sec]=d;
+    body.innerHTML = sectionHTML(sec, d);
+    if(sec==="policing") wirePolicing();
+    wireToggles(sec);
+  }catch(e){ body.innerHTML='<div class="empty">خطأ: '+esc(e.message)+'</div>'; }
+}
+function instRows(fields, inst){
+  return fields.map(f=>{
+    const v = inst[f.key];
+    let disp = v ?? "—";
+    if(f.key==="CommittedRate") disp = v+" bps ("+fmtRate(v)+")";
+    if(f.key==="DownBandwidth" && +v>0) disp = v+" kbps ("+fmtRate((+v)*1000)+")";
+    if(v==="1") disp = '<span class="badge on">نعم</span>';
+    if(v==="0"||v==="") disp = '<span class="badge off">لا</span>';
+    return `<tr><td>${f.ar}</td><td>${disp}</td></tr>`;
+  }).join("");
+}
+function sectionHTML(sec, d){
+  if(!d.ok) return `<div class="empty">الراوتر رجّع خطأ: ${esc(d.error)}</div>`;
+  const insts = d.instances;
+  if(!insts.length) return '<div class="empty">لا يوجد عنصر مُهيَّأ في هذا القسم (فاضي على الراوتر)</div>';
+  if(sec==="basic"){
+    const i = insts[0];
+    return `<div class="card"><h2>⚙️ الإعدادات العامة لـ QoS</h2>
+      <div class="row"><div><div class="name">حالة المحرك</div>
+      <div class="note">القيمة الحية من الراوتر: Enable=${esc(i.Enable)}</div></div>
+      <label class="switch"><input type="checkbox" id="sw_basic" ${i.Enable==="1"?"checked":""} data-sec="basic">
+      <span class="slider"></span></label></div></div>`;
+  }
+  if(sec==="policing"){
+    return `<div class="card"><h2>🚦 Traffic Policing — البوليسرز</h2><table>
+      <tr><th>الاسم</th><th>السرعة</th><th>البيرست</th><th>التجاوز</th><th>الحالة</th></tr>
+      ${insts.map(i=>`<tr><td>${esc(i.Alias)}</td>
+        <td>${i.CommittedRate} <span class="mono">(${fmtRate(i.CommittedRate)})</span></td>
+        <td class="mono">${i.CommittedBurstSize}</td>
+        <td>${esc(i.NonConformingAction)}</td>
+        <td>${i.Enable==="1"?'<span class="badge on">شغال</span>':'<span class="badge off">متوقف</span>'}</td></tr>`).join("")}
+      </table>
+      <p class="note" style="margin-top:12px">⚠️ <b>ملاحظة مهمة:</b> البوليسرز الثلاثة على جهازك مقفولة من فيرموير التليكو (WE/اتصالات مصر) — صفحة الراوتر نفسها بتعطّلهم، وأي أمر تشغيل بيرجّع «تم» من غير تغيير حقيقي. القراءة شغالة، التحكم مرفوض من الجهاز نفسه.</p></div>`;
+  }
+  if(sec==="classification"){
+    return `<div class="card"><h2>🏷️ قواعد التصنيف</h2>${insts.map(i=>`
+      <div class="row"><div><div class="name">${esc(i.Alias)} <span class="badge ${i.Enable==="1"?"on":"off"}">${i.Enable==="1"?"شغالة":"واقفة"}</span></div>
+      <div class="mono">_InstID=${esc(i._InstID)} · Order=${esc(i.Order)} · DevIn=${esc(i.DevIn)} · Policer=${esc(i.PolicerQueue)}</div></div></div>`).join("")}
+      <p class="note" style="margin-top:8px">العرض قراءة فقط حالياً — التعديل الكامل لقواعد التصنيف مراحلة قادمة.</p></div>`;
+  }
+  if(sec==="congestion"||sec==="shaping"){
+    return `<div class="card"><h2>${sec==="congestion"?"🚧 إدارة الازدحام":"🧬 Traffic Shaping"}</h2>
+      <div class="empty">القسم فاضي على الراوتر الحالي — لا توجد طوابير/شيبرز مُهيَّأة.</div></div>`;
+  }
+  return `<div class="card"><div class="empty">—</div></div>`;
+}
+function downlimitHTML(g, r){
+  const gi = g.instances[0] || {};
+  return `<div class="card"><h2>⬇️ حد التنزيل — عام</h2>
+    <div class="row"><div><div class="name">الخاصية مُفعّلة</div>
+      <div class="note">DownBandwidth=${esc(gi.DownBandwidth)} kbps</div></div>
+      <label class="switch"><input type="checkbox" id="sw_dl" ${gi.Enable==="1"?"checked":""}><span class="slider"></span></label></div></div>
+    <div class="card"><h2>📲 حدود لكل جهاز</h2>${ r.instances.length ? `<table>
+      <tr><th>الاسم</th><th>MAC</th><th>الحد</th><th>الحالة</th><th>تشغيل/إيقاف</th></tr>
+      ${r.instances.map(i=>`<tr><td>${esc(i.Alias)}</td><td class="mono">${esc(i.DestMAC)}</td>
+        <td>${i.DownBandwidth} bps <span class="mono">(${fmtRate(+i.DownBandwidth)})</span></td>
+        <td>${i.Enable==="1"?'<span class="badge on">شغال</span>':'<span class="badge off">متوقف</span>'}</td>
+        <td><label class="switch"><input type="checkbox" data-inst="${esc(i._InstID)}"
+          ${i.Enable==="1"?"checked":""}><span class="slider"></span></label></td></tr>`).join("")}
+      </table>` : '<div class="empty">لا قواعد</div>'}
+      <p class="note" style="margin-top:10px">الحد بالـ bps (8192~100000000) — مثال: 4000000 = 4 Mbps.</p></div>`;
+}
+function wireToggles(){
+  document.querySelectorAll('input[data-sec="basic"]').forEach(el=>{
+    if(el._w) return; el._w=1;
+    el.onchange = async ()=>{
+      el.disabled=true;
+      const r = await jpost("/api/qos/basic",{action:"Apply",fields:{Enable:el.checked?"1":"0"}});
+      toast(r.ok? "تم الحفظ ✅" : "رفض الراوتر: "+r.error, !r.ok);
+      if(r.ok) renderQos("basic"); else el.checked=!el.checked;
+      el.disabled=false;
+    };
+  });
+}
+function wirePolicing(){
+  document.querySelectorAll('#qosBody input[data-inst]').forEach(el=>{
+    el.onchange = async ()=>{
+      el.disabled=true;
+      const r = await jpost("/api/qos/policing",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
+      toast(r.ok? `تم ${el.checked?"تشغيل":"إيقاف"} البوليسر ✅`:"رفض الراوتر: "+r.error, !r.ok);
+      if(!r.ok) el.checked=!el.checked;
+      el.disabled=false;
+    };
+  });
+}
+function wireDownlimit(){
+  const sw = $("#sw_dl");
+  if(sw) sw.onchange = async ()=>{
+    sw.disabled=true;
+    const gi = (qosCache.downlimit_global && qosCache.downlimit_global.instances && qosCache.downlimit_global.instances[0]) || {};
+    const fields = {Enable: sw.checked?"1":"0"};
+    if(gi.DownBandwidth !== undefined) fields.DownBandwidth = gi.DownBandwidth;
+    const r = await jpost("/api/qos/downlimit_global",{action:"Apply",fields});
+    toast(r.ok? "تم الحفظ ✅":"رفض الراوتر: "+r.error, !r.ok);
+    if(!r.ok) sw.checked=!sw.checked;
+    sw.disabled=false;
+  };
+  document.querySelectorAll('#qosBody input[data-inst]').forEach(el=>{
+    el.onchange = async ()=>{
+      el.disabled=true;
+      const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
+      toast(r.ok? `تم ${el.checked?"تشغيل":"إيقاف"} الحد ✅`:"رفض الراوتر: "+r.error, !r.ok);
+      if(!r.ok) el.checked=!el.checked;
+      el.disabled=false;
+    };
+  });
+}
+
+// ---------- nav ----------
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  ["dash","qos","devices"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==b.dataset.view));
+  if(b.dataset.view==="dash") loadDash();
+  if(b.dataset.view==="qos") renderQos(document.querySelector(".subnav button.active").dataset.q);
+  if(b.dataset.view==="devices") loadDevices();
+});
+
+checkStatus(); loadDash();
+setInterval(checkStatus, 30000);
+</script>
+</body>
+</html>
