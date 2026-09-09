@@ -1,0 +1,247 @@
+[
+  {
+    "id": "mmHome",
+    "name": "Home",
+    "page": "home_t.lp",
+    "url": "getpage.lua?pid=1002&nextpage=home_t.lp",
+    "items": []
+  },
+  {
+    "id": "mmInternet",
+    "name": "Internet",
+    "page": "Internet_AdminInternetStatus_DSL_t.lp",
+    "url": "getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp",
+    "items": [
+      {
+        "id": "smInternetStatus",
+        "name": "Status",
+        "page": "Internet_AdminInternetStatus_DSL_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp",
+        "subitems": [
+          {
+            "id": "smDslWanSts",
+            "name": "DSL",
+            "page": "Internet_AdminInternetStatus_DSL_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
+          },
+          {
+            "id": "ssmInternet3GStatus",
+            "name": "3G",
+            "page": "Internet_InternetStatus_Internet3GStatus_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_InternetStatus_Internet3GStatus_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smInternetCof",
+        "name": "WAN",
+        "page": "Internet_Dsl_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_Dsl_t.lp",
+        "subitems": [
+          {
+            "id": "smInternetDsl",
+            "name": "DSL",
+            "page": "Internet_Dsl_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_Dsl_t.lp"
+          },
+          {
+            "id": "smInternet3G",
+            "name": "3G",
+            "page": "Internet_Internet3G_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_Internet3G_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smAdminQos",
+        "name": "QoS",
+        "page": "Internet_QoS_Basic_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_Basic_t.lp",
+        "subitems": [
+          {
+            "id": "ssmQosBasic",
+            "name": "QoS Global Configuration",
+            "page": "Internet_QoS_Basic_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_Basic_t.lp"
+          },
+          {
+            "id": "ssmQosType",
+            "name": "Classification",
+            "page": "Internet_QoS_type_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_type_t.lp"
+          },
+          {
+            "id": "ssmQosQueMgr",
+            "name": "Congestion Management",
+            "page": "Internet_QoS_Congestion_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_Congestion_t.lp"
+          },
+          {
+            "id": "ssmQosSpeed",
+            "name": "Traffic Policing",
+            "page": "Internet_QoS_speed_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_speed_t.lp"
+          },
+          {
+            "id": "ssmQosShaper",
+            "name": "Traffic Shaping",
+            "page": "Internet_QoS_shaper_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_shaper_t.lp"
+          },
+          {
+            "id": "ssmQosDownList",
+            "name": "Downside speed limit",
+            "page": "Internet_QoS_DownLimit_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_QoS_DownLimit_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smSecurity",
+        "name": "Security",
+        "page": "Internet_Security_Firewall_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_Security_Firewall_t.lp",
+        "subitems": [
+          {
+            "id": "ssmFirewall",
+            "name": "Firewall",
+            "page": "Internet_Security_Firewall_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_Security_Firewall_t.lp"
+          },
+          {
+            "id": "ssmSecFilter",
+            "name": "Filter Criteria",
+            "page": "Internet_Security_SecFilter_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Internet_Security_SecFilter_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smParentCtrl",
+        "name": "Parental Controls",
+        "page": "Internet_Parent_Ctrl_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_Parent_Ctrl_t.lp",
+        "subitems": []
+      },
+      {
+        "id": "smSntp",
+        "name": "SNTP",
+        "page": "Internet_sntp_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Internet_sntp_t.lp",
+        "subitems": []
+      }
+    ]
+  },
+  {
+    "id": "mmLocalnet",
+    "name": "Local Network",
+    "page": "Localnet_LocalnetStatusUser_t.lp",
+    "url": "getpage.lua?pid=1002&nextpage=Localnet_LocalnetStatusUser_t.lp",
+    "items": [
+      {
+        "id": "smLocalnetStatus",
+        "name": "Status",
+        "page": "Localnet_LocalnetStatusUser_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Localnet_LocalnetStatusUser_t.lp",
+        "subitems": []
+      },
+      {
+        "id": "smLocalWLAN",
+        "name": "WLAN",
+        "page": "Localnet_WlanBasicUser_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Localnet_WlanBasicUser_t.lp",
+        "subitems": [
+          {
+            "id": "ssmWlanBasic",
+            "name": "WLAN Basic",
+            "page": "Localnet_WlanBasicUser_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Localnet_WlanBasicUser_t.lp"
+          },
+          {
+            "id": "ssmWlanAdvanced",
+            "name": "WLAN Advanced",
+            "page": "Localnet_WlanAdvanced_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Localnet_WlanAdvanced_t.lp"
+          },
+          {
+            "id": "ssmWPS",
+            "name": "WPS",
+            "page": "Localnet_LocalWLAN_WPS_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Localnet_LocalWLAN_WPS_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smLan",
+        "name": "LAN",
+        "page": "Localnet_LanMgrIpv4_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Localnet_LanMgrIpv4_t.lp",
+        "subitems": [
+          {
+            "id": "smLanMgrIpv4",
+            "name": "IPv4",
+            "page": "Localnet_LanMgrIpv4_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=Localnet_LanMgrIpv4_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smFtp",
+        "name": "FTP",
+        "page": "Localnet_ftp_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=Localnet_ftp_t.lp",
+        "subitems": []
+      }
+    ]
+  },
+  {
+    "id": "mmManagDiag",
+    "name": "Management & Diagnosis",
+    "page": "ManagDiag_StatusManag_t.lp",
+    "url": "getpage.lua?pid=1002&nextpage=ManagDiag_StatusManag_t.lp",
+    "items": [
+      {
+        "id": "smStatusManag",
+        "name": "Status",
+        "page": "ManagDiag_StatusManag_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=ManagDiag_StatusManag_t.lp",
+        "subitems": []
+      },
+      {
+        "id": "smAccountManag",
+        "name": "Account Management",
+        "page": "ManagDiag_AccountManag_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=ManagDiag_AccountManag_t.lp",
+        "subitems": []
+      },
+      {
+        "id": "smLoginTimeoutMgr",
+        "name": "Login Timeout",
+        "page": "ManagDiag_LoginTimeout_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=ManagDiag_LoginTimeout_t.lp",
+        "subitems": []
+      },
+      {
+        "id": "mmManagDevice",
+        "name": "System Management",
+        "page": "ManagDiag_DeviceManag_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=ManagDiag_DeviceManag_t.lp",
+        "subitems": [
+          {
+            "id": "smDeviceManag",
+            "name": "Device Management",
+            "page": "ManagDiag_DeviceManag_t.lp",
+            "url": "getpage.lua?pid=1002&nextpage=ManagDiag_DeviceManag_t.lp"
+          }
+        ]
+      },
+      {
+        "id": "smLanManag",
+        "name": "Ethernet WAN",
+        "page": "ManagDiag_LanManag_t.lp",
+        "url": "getpage.lua?pid=1002&nextpage=ManagDiag_LanManag_t.lp",
+        "subitems": []
+      }
+    ]
+  }
+]

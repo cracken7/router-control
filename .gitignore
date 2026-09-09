@@ -1,0 +1,10 @@
+# secrets & local state
+scripts/config.json
+scripts/pages/
+scripts/fixtures/*.xml
+scripts/logged_main.html
+*.log
+
+# python
+__pycache__/
+*.pyc
