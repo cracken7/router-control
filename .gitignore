@@ -9,3 +9,8 @@ scripts/logged_main.html
 __pycache__/
 *.pyc
 app/__pycache__/
+desktop/build/
+desktop/dist/
+desktop/__pycache__/
+desktop/*.spec
+desktop/icon_preview.png
