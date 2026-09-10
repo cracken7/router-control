@@ -24,9 +24,18 @@ import requests
 
 
 def _load_config(base_default: str = "http://192.168.1.1") -> dict:
+    """Config lookup order (first found wins):
+    1. %APPDATA%/RouterControl/config.json  (canonical, survives exe rebuilds)
+    2. config.json next to this file        (bundled / dev copy)
+    The exe bundles a fallback copy; real credentials live OUTSIDE so changing
+    the router password never requires rebuilding the exe."""
     cfg = {"base": base_default, "username": "", "password": ""}
-    here = os.path.dirname(os.path.abspath(__file__))
-    for cand in (os.path.join(here, "config.json"),):
+    candidates = []
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        candidates.append(os.path.join(appdata, "RouterControl", "config.json"))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"))
+    for cand in candidates:
         if os.path.exists(cand):
             try:
                 with open(cand, encoding="utf-8") as f:
@@ -34,7 +43,20 @@ def _load_config(base_default: str = "http://192.168.1.1") -> dict:
             except Exception:
                 pass
             break
-    # exe fallback: bundled copy next to the frozen binary
+    # If only the bundled copy exists (first run of a fresh exe), seed APPDATA
+    # with it so the user can edit the external file later.
+    if appdata and not os.path.exists(os.path.join(appdata, "RouterControl", "config.json")):
+        try:
+            bundled = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+            if os.path.exists(bundled):
+                os.makedirs(os.path.join(appdata, "RouterControl"), exist_ok=True)
+                with open(bundled, encoding="utf-8") as f:
+                    content = f.read()
+                with open(os.path.join(appdata, "RouterControl", "config.json"),
+                          "w", encoding="utf-8") as f:
+                    f.write(content)
+        except Exception:
+            pass
     return cfg
 
 

@@ -326,15 +326,28 @@ class Handler(BaseHTTPRequestHandler):
             if u.path in ("/", "/index.html"):
                 with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
                     return self._send(200, f.read(), "text/html; charset=utf-8")
+            if u.path == "/api/login":
+                # Login attempts OUTSIDE the global lock: exactly one attempt,
+                # result + reason returned. Never called by UI polling loops.
+                with LOCK:
+                    if client.logged_in:
+                        return self._send(200, {"ok": True, "router": "ZXHN H168N V3.5"})
+                    blocked = time.time() < getattr(client, "_login_blocked_until", 0)
+                    if blocked:
+                        return self._send(200, {"ok": False, "router": "ZXHN H168N V3.5",
+                                                "blocked": True})
+                    ok = client.login()
+                    if ok:
+                        return self._send(200, {"ok": True, "router": "ZXHN H168N V3.5"})
+                    return self._send(200, {"ok": False, "router": "ZXHN H168N V3.5",
+                                            "blocked": time.time() < getattr(client, "_login_blocked_until", 0),
+                                            "error": "login failed"})
             with LOCK:
                 if u.path == "/api/status":
                     # NO login attempt here — status only. Login happens lazily
                     # on real data requests so we never hammer the router.
                     return self._send(200, {"ok": bool(client.logged_in),
                                             "router": "ZXHN H168N V3.5"})
-                if u.path == "/api/login":
-                    ok = client.logged_in or client.login()
-                    return self._send(200, {"ok": ok, "router": "ZXHN H168N V3.5"})
                 if u.path == "/api/dashboard":
                     return self._send(200, api_dashboard())
                 if u.path == "/api/devices":
