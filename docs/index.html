@@ -235,8 +235,14 @@ async function checkStatus(){
   try{
     const s = await jget("/api/status");
     $("#dot").classList.toggle("on", !!s.ok);
-    $("#connTxt").textContent = s.ok ? "متصل بالراوتر" : "غير متصل";
-  }catch(e){ $("#connTxt").textContent = "السيرفر غير شغال"; }
+    $("#connTxt").textContent = s.ok ? "متصل بالراوتر" : "جارٍ الاتصال…";
+    if(s.ok) return true;
+    // trigger a single lazy login; the server self-rate-limits router attempts
+    const l = await jget("/api/login").catch(()=>({ok:false}));
+    $("#dot").classList.toggle("on", !!l.ok);
+    $("#connTxt").textContent = l.ok ? "متصل بالراوتر" : "الراوتر بيحاول يرد… جرب تاني بعد شوية";
+    return !!l.ok;
+  }catch(e){ $("#connTxt").textContent = "السيرفر غير شغال"; return false; }
 }
 async function loadDash(){
   try{

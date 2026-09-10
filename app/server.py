@@ -328,6 +328,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             with LOCK:
                 if u.path == "/api/status":
+                    # NO login attempt here — status only. Login happens lazily
+                    # on real data requests so we never hammer the router.
+                    return self._send(200, {"ok": bool(client.logged_in),
+                                            "router": "ZXHN H168N V3.5"})
+                if u.path == "/api/login":
                     ok = client.logged_in or client.login()
                     return self._send(200, {"ok": ok, "router": "ZXHN H168N V3.5"})
                 if u.path == "/api/dashboard":

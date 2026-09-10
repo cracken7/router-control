@@ -8,10 +8,11 @@ Auth flow (verified working):
   3) POST /           form: Username, Password=sha256(password+nonce),
                       action=login, _sessionTOKEN=<token rendered on THIS fetch>
 
-Data endpoints (verified): GET-only, but the session must FIRST visit the
-corresponding .lp page (getpage.lua?pid=1002&nextpage=<PAGE>) — otherwise 404.
-Writes: POST to the endpoint URL with body "IF_ACTION=<op>&<fields...>&
-_sessionTOKEN=<token from the .lp page>" and header "Check: sha256(body)".
+Rate limiting (discovered the hard way): wrong/expired-token logins trigger a
+per-IP lockout with a visible countdown (DiaplayLockTime, up to ~60s+). The
+client therefore rate-limits ITSELF: max 1 attempt per LOGIN_MIN_INTERVAL
+seconds, and treats 'Username or password is error' + countdown as a
+temporary lockout (retryable), distinct from bad credentials.
 """
 import hashlib
 import json
@@ -24,13 +25,16 @@ import requests
 
 def _load_config(base_default: str = "http://192.168.1.1") -> dict:
     cfg = {"base": base_default, "username": "", "password": ""}
-    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-    if os.path.exists(p):
-        try:
-            with open(p, encoding="utf-8") as f:
-                cfg.update(json.load(f))
-        except Exception:
-            pass
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in (os.path.join(here, "config.json"),):
+        if os.path.exists(cand):
+            try:
+                with open(cand, encoding="utf-8") as f:
+                    cfg.update(json.load(f))
+            except Exception:
+                pass
+            break
+    # exe fallback: bundled copy next to the frozen binary
     return cfg
 
 
@@ -38,6 +42,7 @@ _CFG = _load_config()
 BASE = _CFG["base"]
 LOGIN_TOKEN_URL = BASE + "/function_module/login_module/login_page/logintoken_lua.lua"
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Referer": BASE + "/"}
+LOGIN_MIN_INTERVAL = 10.0  # seconds between login ATTEMPTS (router locks on spam)
 
 
 def unescape_zte(s: str) -> str:
@@ -60,6 +65,7 @@ class ZteClient:
         self.s = requests.Session()
         self.s.headers.update(UA)
         self.logged_in = False
+        self._last_login_attempt = 0.0
 
     # ---- token handling -------------------------------------------------
     def tokens(self, html: str) -> dict:
@@ -81,9 +87,26 @@ class ZteClient:
 
     # ---- auth ------------------------------------------------------------
     def login(self) -> bool:
+        """Single login attempt with strict self-rate-limiting.
+        The router bans further attempts for ~30-60s after a failure, and every
+        attempt during a ban extends it — so we back off hard instead of retrying."""
+        now = time.time()
+        if now < getattr(self, "_login_blocked_until", 0):
+            return False
+        wait = LOGIN_MIN_INTERVAL - (now - self._last_login_attempt)
+        if wait > 0:
+            time.sleep(wait)
+        self._last_login_attempt = time.time()
+
         r0 = self.s.get(self.base + "/", timeout=10)
         toks = self.tokens(r0.text)
         st = toks.get("loginFormLiteral") or toks.get("sessionTmpToken", "")
+
+        # respect an active router-side lockout countdown if present
+        m = re.search(r"var DiaplayLockTime = \"?(\d+)\"?;", r0.text)
+        if m and int(m.group(1)) > 0:
+            time.sleep(min(int(m.group(1)) + 2, 90))
+
         r1 = self.s.get(LOGIN_TOKEN_URL, timeout=10)
         nonce = strip_tags(r1.text)
         sha = hashlib.sha256((self.password + nonce).encode("utf-8")).hexdigest()
@@ -92,6 +115,9 @@ class ZteClient:
             "action": "login", "_sessionTOKEN": st,
         }, timeout=10)
         self.logged_in = "frm_username" not in r2.text.lower()
+        if not self.logged_in:
+            # failed attempt ⇒ router will reject retries for a while. Back off 45s.
+            self._login_blocked_until = time.time() + 45
         return self.logged_in
 
     def logoff(self):
@@ -106,13 +132,12 @@ class ZteClient:
     def _ensure_login(self):
         if not self.logged_in:
             if not self.login():
-                raise ZteError("login failed")
+                raise ZteError("login failed (router may be rate-limiting; retry shortly)")
 
     # ---- reads -----------------------------------------------------------
     def get(self, path: str) -> str:
         url = path if path.startswith("http") else self.base + path
-        r = self.s.get(url, timeout=15)
-        return r.text
+        return self.s.get(url, timeout=15).text
 
     def page(self, pid: str, nextpage: str) -> str:
         return self.get(f"/getpage.lua?pid={pid}&nextpage={nextpage}")
@@ -123,7 +148,7 @@ class ZteClient:
         self.page(1002, lp_page)
         body = self.get("/common_page/" + endpoint)
         if "SessionTimeout" in body or "404 Not Found" in body:
-            # re-login once and retry
+            time.sleep(3)
             self.logged_in = False
             self._ensure_login()
             self.page(1002, lp_page)
@@ -132,9 +157,8 @@ class ZteClient:
 
     # ---- writes ----------------------------------------------------------
     def write(self, lp_page: str, endpoint: str, fields: dict,
-              if_action: str = "Apply", token: str | None = None) -> str:
-        """POST IF_ACTION=<op>&fields...&_sessionTOKEN=... with Check: sha256(body).
-        Session-activates the endpoint by visiting its page first."""
+              if_action: str = "Apply", token: str = None) -> str:
+        """POST IF_ACTION=<op>&fields...&_sessionTOKEN=... with Check: sha256(body)."""
         self._ensure_login()
         page_html = self.page(1002, lp_page)
         tok = token or self.write_token(page_html)
@@ -154,6 +178,7 @@ class ZteClient:
         r = self.s.post(url, data=body, headers=headers, timeout=20)
         text = r.text
         if "SessionTimeout" in text:
+            time.sleep(3)
             self.logged_in = False
             self._ensure_login()
             page_html = self.page(1002, lp_page)
@@ -167,9 +192,7 @@ class ZteClient:
 
     # ---- XML parsing ------------------------------------------------------
     @staticmethod
-    def parse_instances(xml: str) -> list[dict]:
-        """Parse <Instance><ParaName>k</ParaName><ParaValue>v</ParaValue>...</Instance>
-        into a list of dicts (with _InstID included)."""
+    def parse_instances(xml: str) -> list:
         out = []
         for inst in re.findall(r"<Instance>(.*?)</Instance>", xml, re.S):
             pairs = re.findall(r"<ParaName>(.*?)</ParaName>\s*<ParaValue>(.*?)</ParaValue>", inst, re.S)
@@ -179,7 +202,7 @@ class ZteClient:
         return out
 
     @staticmethod
-    def check_ok(xml: str) -> tuple[bool, str]:
+    def check_ok(xml: str) -> tuple:
         m = re.search(r"<IF_ERRORSTR>(.*?)</IF_ERRORSTR>", xml, re.S)
         err = m.group(1).strip() if m else "?"
         return err == "SUCC", err
