@@ -27,6 +27,25 @@ client = ZteClient()
 _cache = {}
 CACHE_TTL = 2.5
 
+# ---- web-app auth gate --------------------------------------------------
+# The app no longer auto-logs into the router: a human must submit the login
+# screen once per server start. Credentials are checked against config.json,
+# then forwarded to the router. Phones on the LAN use the same gate.
+AUTH = {"ok": False, "user": ""}
+
+
+def lan_ip() -> str:
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("192.168.1.1", 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "127.0.0.1"
+    finally:
+        s.close()
+    return ip
+
 SECTIONS = {
     "basic": ("Internet_QoS_Basic_t.lp", "Internet_AdminQos_BasicCfg_lua.lua"),
     "classification": ("Internet_QoS_type_t.lp", "Internet_QoS_type_lua.lua"),
@@ -559,6 +578,65 @@ def api_reboot():
     return {"ok": ok, "error": err}
 
 
+def api_wan_ctrl(on):
+    """Disconnect / reconnect the PPPoE WAN link (live router control).
+    Firmware action names: PPPCONNECT / PPPDISCONNECT (page JS line ~6817)."""
+    act = "PPPCONNECT" if on else "PPPDISCONNECT"
+    xml = client.write(WAN_PAGE, WAN_EP, {}, if_action=act)
+    ok, err = client.check_ok(xml)
+    invalidate()
+    oplog("wan-" + act.lower(), "")
+    return {"ok": ok, "error": err, "note": "اتصل" if on else "انقطع النت مؤقتاً"}
+
+
+def api_ping(host, count=4):
+    import subprocess
+    host = re.sub(r"[^a-zA-Z0-9.\-:]", "", host)[:64]
+    if not host:
+        return {"ok": False, "error": "host invalid"}
+    param = "-n" if os.name == "nt" else "-c"
+    try:
+        r = subprocess.run(["ping", param, str(count), host],
+                           capture_output=True, text=True, timeout=count * 3 + 10)
+        out = (r.stdout or "") + (r.stderr or "")
+        ms = [int(x) for x in re.findall(r"time[=<](\d+)ms", out)]
+        got = "TTL=" in out or "64 bytes" in out
+        return {"ok": got, "host": host, "avg_ms": round(sum(ms)/len(ms), 1) if ms else None,
+                "raw": out.strip()[:400]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def api_speedtest():
+    """Download a test file via the router WAN and report real throughput."""
+    import urllib.request
+    urls = ["https://speed.cloudflare.com/__down?bytes=10000000",
+            "http://speedtest.tele2.net/10MB.zip"]
+    for url in urls:
+        try:
+            t0 = time.time()
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            n = 0
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                while True:
+                    chunk = resp.read(65536)
+                    if not chunk:
+                        break
+                    n += len(chunk)
+                    if time.time() - t0 > 15:
+                        break
+            dt = time.time() - t0
+            if n > 1e5 and dt > 0.2:
+                bps = n * 8 / dt
+                oplog("speedtest", f"{int(bps/1e6)} Mbps")
+                return {"ok": True, "mbps": round(bps / 1e6, 1), "bytes": n,
+                        "seconds": round(dt, 1), "server": "cloudflare"}
+        except Exception:
+            continue
+    return {"ok": False, "error": "مفيش سيرفر سرعة وصلناه — اختبرنت"}
+
+
+
 def api_factory_reset():
     xml = client.write(SYS_PAGE, SYS_EP, {}, if_action="Restore")
     ok, err = client.check_ok(xml)
@@ -611,6 +689,18 @@ class Handler(BaseHTTPRequestHandler):
             if u.path in ("/", "/index.html"):
                 with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
                     return self._send(200, f.read(), "text/html; charset=utf-8")
+            if u.path == "/api/appstatus":
+                peer = self.client_address[0]
+                body = {"auth": AUTH["ok"], "user": AUTH["user"],
+                        "router": "ZXHN H168N V3.5",
+                        "lan": lan_ip(), "port": 8766}
+                # prefill creds ONLY for the local machine (phone gets username only)
+                if peer in ("127.0.0.1", "::1"):
+                    body["user"] = body["user"] or client.username
+                    body["pass"] = client.password
+                return self._send(200, body)
+            if not AUTH["ok"]:
+                return self._send(401, {"ok": False, "error": "auth_required"})
             if u.path == "/api/login":
                 with LOCK:
                     if client.logged_in:
@@ -638,6 +728,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, api_wan())
                 if u.path == "/api/lanstatus":
                     return self._send(200, api_lan_status())
+                if u.path == "/api/ping":
+                    return self._send(200, api_ping((parse_qs(u.query).get("host") or [""])[0]))
+                if u.path == "/api/speedtest":
+                    return self._send(200, api_speedtest())
                 if u.path == "/api/dhcpleases":
                     return self._send(200, api_dhcp_leases())
                 if u.path == "/api/info":
@@ -659,6 +753,28 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         try:
             payload = self._json_body()
+            if u.path == "/api/applogin":
+                # validate against stored router credentials, then login ONCE
+                user = str(payload.get("username", "")).strip()
+                pwd = str(payload.get("password", ""))
+                if not (user and pwd):
+                    return self._send(200, {"ok": False, "error": "اكتب اليوزر والباسورد"})
+                if user != client.username or pwd != client.password:
+                    return self._send(200, {"ok": False, "error": "يوزر أو باسورد غلط", "wrong": True})
+                with LOCK:
+                    blocked = time.time() < getattr(client, "_login_blocked_until", 0)
+                    if blocked and not client.logged_in:
+                        left = int(getattr(client, "_login_blocked_until", 0) - time.time())
+                        return self._send(200, {"ok": False,
+                                                "error": f"الراوتر بيبرد لسه — استنى {left} ثانية"})
+                    if not client.logged_in:
+                        if not client.login():
+                            return self._send(200, {"ok": False, "error": "الراوتر رفض الدخول — جرّب بعد شوية"})
+                    AUTH["ok"] = True
+                    AUTH["user"] = user
+                    return self._send(200, {"ok": True})
+            if not AUTH["ok"]:
+                return self._send(401, {"ok": False, "error": "auth_required"})
             with LOCK:
                 if u.path.startswith("/api/qos/"):
                     sec = u.path.rsplit("/", 1)[-1]
@@ -681,6 +797,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, api_restore(payload.get("backup", {}), bool(payload.get("apply"))))
                 if u.path == "/api/system/reboot":
                     return self._send(200, api_reboot())
+                if u.path == "/api/wan/ctrl":
+                    return self._send(200, api_wan_ctrl(bool(payload.get("on"))))
                 if u.path == "/api/system/factory-reset":
                     return self._send(200, api_factory_reset())
             return self._send(404, {"ok": False, "error": "not found"})
@@ -691,5 +809,6 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = 8766
     print(f"Router Control UI  ->  http://127.0.0.1:{port}")
+    print(f"From your phone    ->  http://{lan_ip()}:{port}  (same wifi)")
     print("Router target      ->  http://192.168.1.1  (ZXHN H168N V3.5)")
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()

@@ -61,8 +61,8 @@ def boot_server(port: int):
     if hasattr(sys, "_MEIPASS"):
         server.UI_DIR = os.path.join(sys._MEIPASS, "ui")
     from http.server import ThreadingHTTPServer
-    print(f"server starting on 127.0.0.1:{port} ui={server.UI_DIR}")
-    ThreadingHTTPServer(("127.0.0.1", port), server.Handler).serve_forever()
+    print(f"server starting on 0.0.0.0:{port} ui={server.UI_DIR}")
+    ThreadingHTTPServer(("0.0.0.0", port), server.Handler).serve_forever()
 
 
 def main():

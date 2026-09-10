@@ -170,12 +170,41 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
 .danger-zone:hover{border-color:rgba(255,93,115,.5)}
 @keyframes glow-border{0%,100%{box-shadow:0 0 0 0 rgba(76,201,240,0)}50%{box-shadow:0 0 24px 2px rgba(76,201,240,.12)}}
 .glow{animation:glow-border 4s infinite}
-@media(max-width:640px){.wrap{padding:14px 9px 80px}nav button{padding:9px 13px;font-size:12px}}
+@media(max-width:640px){.wrap{padding:14px 9px 80px}nav button{padding:9px 13px;font-size:12px}
+  h1{font-size:17px}.status-pill{font-size:11px;padding:7px 11px}.card{padding:15px;border-radius:16px}
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px}.stat .v{font-size:18px}
+  table{font-size:11.5px}td,th{padding:8px 6px}.row{flex-wrap:wrap}
+  .frm-row{flex-direction:column}input.txt,select.sel{padding:12px 10px;font-size:14px}
+  .st-form{grid-template-columns:1fr 1fr !important}
+}
+@supports(-webkit-touch-callout:none){body{text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}}
 </style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05080f">
 </head>
 <body>
 <div class="aurora"><i></i><i></i><i></i></div>
-<div class="wrap">
+
+<!-- ═══ LOGIN GATE ═══ -->
+<div id="gate" class="hidden" style="min-height:100vh;display:grid;place-items:center;position:relative;z-index:2">
+  <div class="modal-box" style="width:min(410px,94vw);animation:rise .6s cubic-bezier(.2,.8,.3,1.1)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="logo" style="margin:0 auto 14px;width:64px;height:64px;font-size:31px;border-radius:20px"><span class="wave"></span>📡</div>
+      <h1 style="font-size:19px">لوحة تحكم الراوتر</h1>
+      <div class="sub" style="margin-top:5px">ZTE ZXHN H168N V3.5 — 192.168.1.1</div>
+    </div>
+    <div class="frm">
+      <div><label>👤 اليوزر</label><input class="txt" id="gu" style="width:100%" autocomplete="username"></div>
+      <div><label>🔑 الباسورد</label><input class="txt" id="gp" type="password" style="width:100%" autocomplete="current-password"></div>
+      <button class="btn" id="gateBtn" style="margin-top:6px;padding:12px;font-size:14px" onclick="gateLogin()">🔓 دخول اللوحة</button>
+      <div class="err hidden" id="gateErr" style="text-align:center;margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hidden" id="appwrap">
   <header class="rise">
     <div class="logo"><span class="wave"></span>📡</div>
     <div>
@@ -192,6 +221,7 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
     <button data-view="wifi">📶 الواي فاي</button>
     <button data-view="lan">🔌 LAN / DHCP</button>
     <button data-view="security">🛡️ الحماية</button>
+    <button data-view="tools">🌐 أدوات</button>
     <button data-view="system">⚙️ النظام</button>
   </nav>
 
@@ -261,6 +291,13 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
     <div class="card rise"><h2>⛔ الأجهزة المحظورة</h2><div id="banBody" class="load">…</div></div>
   </section>
 
+  <!-- TOOLS -->
+  <section id="view-tools" class="hidden">
+    <div class="card rise"><h2>🔌 خط الإنترنت — فصل/وصل</h2><div id="wanBody" class="load">…</div></div>
+    <div class="card rise"><h2>🚀 اختبار السرعة الحقيقي</h2><div id="spBody" class="load">…</div></div>
+    <div class="card rise"><h2>📡 بنج من الراوتر لأي عنوان</h2><div id="pingBody" class="load">…</div></div>
+  </section>
+
   <!-- SYSTEM -->
   <section id="view-system" class="hidden">
     <div class="card rise"><h2>ℹ️ بيانات الجهاز</h2><div id="sysInfo" class="load">…</div></div>
@@ -285,7 +322,10 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const API = (location.hostname === "127.0.0.1" || location.hostname === "localhost" || location.protocol === "file:") ? "" : "http://127.0.0.1:8766";
+// API base: when the app is served BY the local server (PC exe, or phone via
+// http://<pc-ip>:8766) use same-origin. Only the GitHub Pages copy needs to
+// reach back to the local server on the phone/PC.
+const API = (location.hostname === "cracken7.github.io" || location.protocol === "file:") ? "http://127.0.0.1:8766" : "";
 let qosCache = {}, wifiCache = null, devicesCache = [], busy = false, sparkHist = [];
 
 /* ripple effect */
@@ -313,9 +353,15 @@ function toast(msg, err){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
   clearTimeout(t._h); t._h = setTimeout(()=>t.className = "toast", 3000);
 }
-async function jget(u){ const r = await fetch(API + u); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function jget(u){
+  const r = await fetch(API + u);
+  if(r.status === 401){ showGate(); throw new Error("auth_required"); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
 async function jpost(u, b){
   const r = await fetch(API + u, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b||{})});
+  if(r.status === 401){ showGate(); return {ok:false, error:"auth_required"}; }
   return r.json();
 }
 function esc(s){ return (s??"").toString().replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;","\"":"&quot;"}[c])); }
@@ -359,7 +405,35 @@ async function tickTraffic(){
   }catch(e){}
 }
 
-/* ==================== BOOT/DASH ==================== */
+/* ==================== BOOT / DASH ==================== */
+/* app login gate */
+let APP_AUTH = false;
+function showGate(){
+  $("#gate").classList.remove("hidden");
+  $("#appwrap").classList.add("hidden");
+}
+async function gateLogin(){
+  const btn = $("#gateBtn");
+  const u = $("#gu").value.trim(), p = $("#gp").value;
+  $("#gateErr").classList.add("hidden");
+  if(!u || !p){ $("#gateErr").textContent = "اكتب اليوزر والباسورد"; $("#gateErr").classList.remove("hidden"); return; }
+  btn.disabled = true; btn.textContent = "جارٍ الدخول…";
+  try{
+    const r = await jpost("/api/applogin", {username:u, password:p});
+    if(r.ok){
+      APP_AUTH = true;
+      $("#gate").classList.add("hidden");
+      $("#appwrap").classList.remove("hidden");
+      startApp();
+    } else {
+      $("#gateErr").textContent = r.error || "فشل";
+      $("#gateErr").classList.remove("hidden");
+    }
+  }catch(e){
+    $("#gateErr").textContent = "السيرفر مش ردّ — تأكد إنه شغال"; $("#gateErr").classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = "🔓 دخول اللوحة";
+}
 async function boot(){
   try{
     const s = await jget("/api/status");
@@ -900,16 +974,74 @@ function askReset(){
     jpost("/api/system/factory-reset").then(r=>toast(r.ok?"باعود للمصنع…":"خطأ: "+r.error,!r.ok));
 }
 
+/* ==================== TOOLS ==================== */
+async function loadTools(){
+  try{
+    const w = await jget("/api/wan");
+    const on = (w.wan||{}).ConnStatus==="Connected";
+    $("#wanBody").className="";
+    $("#wanBody").innerHTML = `<div class="row"><div><div class="name">الحالة: <b style="color:${on?"var(--ok)":"var(--bad)"}">${on?"متصل ✓":"مقطوع ✗"}</b></div>
+      <div class="note">${esc((w.wan||{}).TransType||"")} · متصل من ${fmtDur((w.wan||{}).UpTime||0)}</div></div>
+      <div style="display:flex;gap:8px">
+        ${on?`<button class="btn btn-sm red" onclick="wanCtrl(false)">⏏️ فصل الخط</button>`:""}
+        <button class="btn btn-sm green" onclick="wanCtrl(true)">🔄 ${on?"إعادة اتصال":"وصل الخط"}</button></div></div>
+      <p class="note" style="margin-top:8px">الفصل بيقطع النت عن كل البيت لحد ما توصل تاني — استخدمها لو النت تقيل.</p>`;
+    $("#spBody").className="";
+    $("#spBody").innerHTML = `<div class="row"><div><div class="name">قياس السرعة الفعلية من جهازك عبر الراوتر</div>
+      <div class="note">بينزّل ~10MB من Cloudflare ويحسب الميجابت/ثانية</div></div>
+      <button class="btn" id="spBtn" onclick="runSpeed()">🚀 ابدأ القياس</button></div>
+      <div id="spRes" style="margin-top:14px"></div>`;
+    $("#pingBody").className="";
+    $("#pingBody").innerHTML = `<div class="row" style="flex-wrap:wrap"><div style="flex:1;min-width:160px">
+        <div class="name">بنج لأي عنوان</div><div class="note">مثال: 8.8.8.8 أو google.com</div></div>
+      <input class="txt" id="pingHost" value="8.8.8.8" style="width:160px">
+      <button class="btn btn-sm" onclick="runPing()">📡 بنج</button></div>
+      <div id="pingRes" class="mono" style="margin-top:12px;white-space:pre-wrap"></div>`;
+  }catch(e){ $("#wanBody").textContent="خطأ: "+e.message; }
+}
+async function wanCtrl(on){
+  if(!on && !confirm("فصل النت عن البيت كله؟")) return;
+  const r = await jpost("/api/wan/ctrl",{on});
+  toast(r.ok?(on?"الخط هيتوصل…":"الخط اتفصل ⏏️"):"رفض: "+r.error,!r.ok);
+  if(r.ok) setTimeout(loadTools, 3000);
+}
+async function runSpeed(){
+  const btn = $("#spBtn"); btn.disabled=true; btn.textContent="⏳ بيقيس…";
+  const t0 = Date.now();
+  const iv = setInterval(()=>{ $("#spRes").innerHTML = `<div class="stat" style="text-align:center"><div class="l">جارٍ التنزيل… ${((Date.now()-t0)/1000).toFixed(1)}s</div></div>`; },150);
+  try{
+    const r = await jget("/api/speedtest");
+    clearInterval(iv);
+    if(r.ok){
+      const mbps = r.mbps;
+      const pct = Math.min(100, mbps/50*100);
+      $("#spRes").innerHTML = `<div class="grid"><div class="stat" style="text-align:center">
+        <div class="l">السرعة</div><div class="v" style="font-size:34px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent">${mbps} Mbps</div>
+        <div class="s">${(r.bytes/1e6).toFixed(1)}MB في ${r.seconds} ثانية</div>
+        <div class="netbars" style="height:10px;margin-top:12px"><i style="width:${pct}%;flex:none;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:9px"></i><i style="flex:1;background:rgba(255,255,255,.06)"></i></div></div></div>`;
+      toast(`🚀 سرعتك: ${mbps} Mbps`);
+    } else { $("#spRes").innerHTML = `<div class="empty">${esc(r.error||"فشل القياس")}</div>`; }
+  }catch(e){ clearInterval(iv); $("#spRes").innerHTML=`<div class="empty">${esc(e.message)}</div>`; }
+  btn.disabled=false; btn.textContent="🚀 ابدأ القياس";
+}
+async function runPing(){
+  const host = $("#pingHost").value.trim();
+  $("#pingRes").textContent = "⏳…";
+  const r = await jget("/api/ping?host="+encodeURIComponent(host));
+  $("#pingRes").innerHTML = r.ok ? `<span style="color:var(--ok)">✓ ${esc(r.host)}</span> — متوسط ${r.avg_ms} ms`
+    : `<span style="color:var(--bad)">✗ فشل</span>\n${esc(r.raw||r.error||"")}`;
+}
+
 /* ==================== MODAL / NAV ==================== */
 function closeModal(){ $("#modal").classList.add("hidden"); }
 $("#modal").onclick = e=>{ if(e.target.id==="modal") closeModal(); };
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
 const LOADERS = {dash:()=>{loadDash();loadFeed();},
   qos:()=>renderQos($$(".subnav button").find(b=>b.classList.contains("active")).dataset.q),
-  devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, system:loadSystem};
+  devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, tools:loadTools, system:loadSystem};
 function showView(name){
   $$("nav button").forEach(x=>x.classList.toggle("active", x.dataset.view===name));
-  ["dash","qos","devices","wifi","lan","security","system"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==name));
+  ["dash","qos","devices","wifi","lan","security","tools","system"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==name));
   const s = $("#view-"+name);
   s.style.animation="none"; s.offsetHeight; s.style.animation="fadeIn .35s";
   LOADERS[name]?.();
@@ -917,21 +1049,35 @@ function showView(name){
 $$("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 
 /* ==================== INIT ==================== */
-(async function init(){
-  const ok = await boot();
-  if(ok){ loadDash(); loadFeed(); loadDevices(); }
+async function prefillGate(){
+  try{
+    const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>({}));
+    $("#gu").value = st.user || "";
+    $("#gp").value = st.pass || "";
+  }catch(e){}
+}
+function startApp(){
+  if(APP_AUTH) return;  // one interval set only
+  APP_AUTH = true;
+  $("#gate").classList.add("hidden");
+  $("#appwrap").classList.remove("hidden");
+  boot().then(ok=>{ if(ok){ loadDash(); loadFeed(); loadDevices(); } });
   setInterval(tickTraffic, 3000);
-  setInterval(async ()=>{
-    if(busy) return;
-    const s = await jget("/api/status").catch(()=>({ok:false}));
-    if(!s.ok) boot().then(o=>{ if(o) { loadDash(); } });
-  }, 20000);
   setInterval(()=>{
     const v = $$("nav button").find(b=>b.classList.contains("active"))?.dataset.view;
     if(v==="dash") loadDash();
     if(v==="devices") loadDevices();
   }, 30000);
+}
+(async function init(){
+  const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>null);
+  if(st && st.auth){ startApp(); return; }
+  showGate();
+  prefillGate();
 })();
+document.addEventListener("keydown", e=>{
+  if(!APP_AUTH && e.key==="Enter") gateLogin();
+});
 </script>
 </body>
 </html>
