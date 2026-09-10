@@ -198,6 +198,9 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
     <div class="frm">
       <div><label>👤 اليوزر</label><input class="txt" id="gu" style="width:100%" autocomplete="username"></div>
       <div><label>🔑 الباسورد</label><input class="txt" id="gp" type="password" style="width:100%" autocomplete="current-password"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);margin:-4px 0 2px;cursor:pointer">
+        <input type="checkbox" id="remember" style="width:17px;height:17px;accent-color:var(--acc)">
+        💾 افتكر الباسورد على الجهاز ده (دخول بضغطة للأبد)</label>
       <button class="btn" id="gateBtn" style="margin-top:6px;padding:12px;font-size:14px" onclick="gateLogin()">🔓 دخول اللوحة</button>
       <div class="err hidden" id="gateErr" style="text-align:center;margin-top:6px"></div>
       <div id="srvRow" style="display:none;margin-top:12px">
@@ -443,6 +446,8 @@ async function gateLogin(){
   try{
     const r = await jpost("/api/applogin", {username:u, password:p});
     if(r.ok){
+      if($("#remember").checked){ localStorage.setItem("rc_cred", btoa(unescape(encodeURIComponent(u + ":" + p)))); }
+      else localStorage.removeItem("rc_cred");
       APP_AUTH = true;
       $("#gate").classList.add("hidden");
       $("#appwrap").classList.remove("hidden");
@@ -464,14 +469,15 @@ async function boot(){
     if(s.ok){ setConn(true); return true; }
     const l = await jget("/api/login");
     setConn(!!l.ok);
-    if(!l.ok) $("#connTxt").textContent = l.blocked ? "محاولة فاشلة… استنى ٥٠ ثانية" : "فشل الدخول";
+    if(!l.ok) $("#connTxt").textContent = "غير متصل";
     return !!l.ok;
   }catch(e){ $("#connTxt").textContent = "السيرفر مغلق"; return false; }
 }
 function setConn(ok){
   $("#dot").classList.toggle("on", ok);
-  if(ok) $("#connTxt").textContent = "متصل بالراوتر";
+  $("#connTxt").textContent = ok ? "متصل بالراوتر" : "غير متصل";
 }
+setInterval(()=>{ if(APP_AUTH && !busy){ jget("/api/status").then(s=>setConn(s.ok)).catch(()=>{}); } }, 20000);
 async function loadDash(){
   try{
     const [d, dv] = await Promise.all([jget("/api/dashboard"), jget("/api/devices")]);
@@ -1075,6 +1081,13 @@ $$("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 /* ==================== INIT ==================== */
 async function prefillGate(){
   try{
+    const saved = localStorage.getItem("rc_cred");
+    if(saved){
+      const [u,p] = decodeURIComponent(escape(atob(saved))).split(":");
+      $("#gu").value = u; $("#gp").value = p; $("#remember").checked = true;
+      gateLogin();   // fully automatic on this device
+      return;
+    }
     const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>({}));
     $("#gu").value = st.user || "";
     $("#gp").value = st.pass || "";
