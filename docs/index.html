@@ -200,6 +200,12 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
       <div><label>🔑 الباسورد</label><input class="txt" id="gp" type="password" style="width:100%" autocomplete="current-password"></div>
       <button class="btn" id="gateBtn" style="margin-top:6px;padding:12px;font-size:14px" onclick="gateLogin()">🔓 دخول اللوحة</button>
       <div class="err hidden" id="gateErr" style="text-align:center;margin-top:6px"></div>
+      <div id="srvRow" style="display:none;margin-top:12px">
+        <label>🌐 عنوان السيرفر (الكمبيوتر)</label>
+        <div class="row" style="gap:8px"><input class="txt" id="srvInput" placeholder="192.168.1.14:8766" style="flex:1" inputmode="url">
+        <button class="btn btn-sm" onclick="if(setServerUrl(document.getElementById('srvInput').value)){document.getElementById('srvRow').style.display='none'; tryGate();}">احفظ</button></div>
+      </div>
+      ${"" /* server link injected below */}
     </div>
   </div>
 </div>
@@ -323,9 +329,25 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 // API base: when the app is served BY the local server (PC exe, or phone via
-// http://<pc-ip>:8766) use same-origin. Only the GitHub Pages copy needs to
-// reach back to the local server on the phone/PC.
-const API = (location.hostname === "cracken7.github.io" || location.protocol === "file:") ? "http://127.0.0.1:8766" : "";
+// http://<pc-ip>:8766) use same-origin. The GitHub Pages copy needs the
+// address of a real server: try localhost first, then a saved server address
+// (e.g. http://192.168.1.14:8766 typed once on the login screen).
+const REMOTE = location.hostname === "cracken7.github.io" || location.protocol === "file:";
+let API = REMOTE ? (localStorage.getItem("rc_api") || "http://127.0.0.1:8766") : "";
+function setServerUrl(u){
+  u = (u||"").trim().replace(/\/+$/, "");
+  if(!/^https?:\/\/[^/]+/.test(u) && !/^\d|^\./.test(u)) { toast("عنوان غلط — مثال: 192.168.1.14:8766", true); return false; }
+  if(!/^https?:\/\//.test(u)) u = "http://" + u;
+  localStorage.setItem("rc_api", u);
+  API = u;
+  toast("تم — جرّب تدوس دخول تاني");
+  return true;
+}
+function changeServer(){
+  const cur = API.startsWith("http") ? API : location.origin;
+  const v = prompt("عنوان السيرفر (الكمبيوتر اللي شغال فيه التطبيق) مثال: 192.168.1.14:8766", cur.replace(/^https?:\/\//,""));
+  if(v && setServerUrl(v)) tryGate();
+}
 let qosCache = {}, wifiCache = null, devicesCache = [], busy = false, sparkHist = [];
 
 /* ripple effect */
@@ -430,7 +452,9 @@ async function gateLogin(){
       $("#gateErr").classList.remove("hidden");
     }
   }catch(e){
-    $("#gateErr").textContent = "السيرفر مش ردّ — تأكد إنه شغال"; $("#gateErr").classList.remove("hidden");
+    $("#gateErr").textContent = REMOTE ? "السيرفر مش ردّ على " + API : "السيرفر مش ردّ — تأكد إنه شغال";
+    $("#gateErr").classList.remove("hidden");
+    if(REMOTE){ $("#srvRow").style.display="block"; $("#srvInput").value = API.replace(/^https?:\/\//,""); }
   }
   btn.disabled = false; btn.textContent = "🔓 دخول اللوحة";
 }
@@ -1054,8 +1078,16 @@ async function prefillGate(){
     const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>({}));
     $("#gu").value = st.user || "";
     $("#gp").value = st.pass || "";
+    if(REMOTE && !st.user){ $("#srvRow").style.display="block"; $("#srvInput").value = API.replace(/^https?:\/\//,"");
+      const hint = document.createElement("div"); hint.className="note"; hint.style.cssText="margin-top:8px;text-align:center";
+      hint.innerHTML = '⚠️ على الموبايل: شغّل التطبيق على الكمبيوتر الأول، وبعدها اكتب العنوان اللي بيظهرلك فيه <b>(مثال 192.168.1.14:8766)</b> — مش لينك جيت هب';
+      $("#gateErr").after(hint);
+      tryGate();
+    }
   }catch(e){}
 }
+let gateTried = false;
+function tryGate(){ if(!gateTried){ gateTried = true; } }
 function startApp(){
   if(APP_AUTH) return;  // one interval set only
   APP_AUTH = true;
