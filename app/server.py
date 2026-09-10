@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -26,12 +27,17 @@ OPS_FILE = os.path.join(STATE_DIR, "opslog.json")
 client = ZteClient()
 _cache = {}
 CACHE_TTL = 2.5
+TTL_OVERRIDE = {"devices": 45, "wifi": 45, "lanstatus": 45, "dashboard": 20,
+                "sec:macfilter": 45, "sec:macfilter_policy": 45,
+                "sec:downlimit_rules": 30, "sec:basic": 30}
 
 # ---- web-app auth gate --------------------------------------------------
 # The app no longer auto-logs into the router: a human must submit the login
 # screen once per server start. Credentials are checked against config.json,
 # then forwarded to the router. Phones on the LAN use the same gate.
 AUTH = {"ok": False, "user": ""}
+LOGIN_LOCK = threading.Lock()
+EXECUTOR = ThreadPoolExecutor(max_workers=4)
 
 
 def lan_ip() -> str:
@@ -83,12 +89,22 @@ INFO_EP = "ManagReg_lua.lua"
 
 def cached(key, fn):
     now = time.time()
+    ttl = TTL_OVERRIDE.get(key, CACHE_TTL)
     hit = _cache.get(key)
-    if hit and now - hit["t"] < CACHE_TTL:
+    if hit and now - hit["t"] < ttl:
         return hit["data"]
     data = fn()
     _cache[key] = {"t": now, "data": data}
     return data
+
+
+def _warm():
+    """Prefetch the heavy views in background so first render is a cache hit."""
+    for fn_ in (api_devices, api_wifi, api_lan_status, api_dashboard):
+        try:
+            fn_()
+        except Exception:
+            pass
 
 
 def invalidate():
@@ -529,14 +545,22 @@ def api_wan():
 def api_dashboard():
     def fn():
         out = {"ok": True}
-        b = api_read("basic")
+        f_b = EXECUTOR.submit(api_read, "basic")
+        f_dg = EXECUTOR.submit(api_read, "downlimit_global")
+        f_dv = EXECUTOR.submit(api_devices)
+        f_w = EXECUTOR.submit(api_wan)
+        f_i = EXECUTOR.submit(client.read_endpoint, INFO_PAGE, INFO_EP)
+        b = f_b.result()
         out["qos_enabled"] = b["instances"][0].get("Enable") if b["instances"] else None
-        dg = api_read("downlimit_global")
+        dg = f_dg.result()
         out["downlimit"] = dg["instances"][0] if dg["instances"] else {}
-        out["devices_count"] = len(api_devices()["devices"])
-        w = api_wan()
+        try:
+            out["devices_count"] = len(f_dv.result(timeout=20)["devices"])
+        except Exception:
+            out["devices_count"] = 0
+        w = f_w.result()
         out["wan"], out["dsl"] = w["wan"], w["dsl"]
-        info = client.parse_instances(client.read_endpoint(INFO_PAGE, INFO_EP))
+        info = client.parse_instances(f_i.result())
         out["device_info"] = info[0] if info else {}
         tr = _traffic_state["series"]
         out["net"] = tr[-1] if tr else [0, 0]
@@ -702,49 +726,49 @@ class Handler(BaseHTTPRequestHandler):
             if not AUTH["ok"]:
                 return self._send(401, {"ok": False, "error": "auth_required"})
             if u.path == "/api/login":
-                with LOCK:
-                    if client.logged_in:
-                        return self._send(200, {"ok": True, "router": "ZXHN H168N V3.5"})
+                with LOGIN_LOCK:
                     blocked = time.time() < getattr(client, "_login_blocked_until", 0)
-                    if blocked:
+                    if blocked and not client.logged_in:
                         return self._send(200, {"ok": False, "blocked": True})
-                    ok = client.login()
+                    ok = client.ensure_login()
                     return self._send(200, {"ok": ok, "router": "ZXHN H168N V3.5"})
-            with LOCK:
-                q = parse_qs(u.query)
-                if u.path == "/api/status":
-                    return self._send(200, {"ok": bool(client.logged_in), "router": "ZXHN H168N V3.5"})
-                if u.path == "/api/dashboard":
-                    return self._send(200, api_dashboard())
-                if u.path == "/api/devices":
-                    return self._send(200, api_devices())
-                if u.path == "/api/traffic":
-                    return self._send(200, api_traffic())
-                if u.path == "/api/wifi":
-                    return self._send(200, api_wifi())
-                if u.path == "/api/wifi/password":
-                    return self._send(200, api_wifi_password((q.get("ap") or ["DEV.WIFI.AP1"])[0]))
-                if u.path == "/api/wan":
-                    return self._send(200, api_wan())
-                if u.path == "/api/lanstatus":
-                    return self._send(200, api_lan_status())
-                if u.path == "/api/ping":
-                    return self._send(200, api_ping((parse_qs(u.query).get("host") or [""])[0]))
-                if u.path == "/api/speedtest":
-                    return self._send(200, api_speedtest())
-                if u.path == "/api/dhcpleases":
-                    return self._send(200, api_dhcp_leases())
-                if u.path == "/api/info":
-                    return self._send(200, api_device_info())
-                if u.path == "/api/backup":
-                    return self._send(200, api_backup())
-                if u.path == "/api/ops":
-                    return self._send(200, api_ops())
-                if u.path.startswith("/api/qos/"):
-                    sec = u.path.rsplit("/", 1)[-1]
-                    if sec not in SECTIONS:
-                        return self._send(404, {"ok": False, "error": "unknown section"})
-                    return self._send(200, api_read(sec))
+            # Heavy GETs run concurrently: requests.Session is thread-safe and
+            # the TTL cache collapses identical fan-out. Serializing them under
+            # one global lock is what made phones crawl / time out.
+            q = parse_qs(u.query)
+            if u.path == "/api/status":
+                return self._send(200, {"ok": bool(client.logged_in), "router": "ZXHN H168N V3.5"})
+            if u.path == "/api/dashboard":
+                return self._send(200, api_dashboard())
+            if u.path == "/api/devices":
+                return self._send(200, api_devices())
+            if u.path == "/api/traffic":
+                return self._send(200, api_traffic())
+            if u.path == "/api/wifi":
+                return self._send(200, api_wifi())
+            if u.path == "/api/wifi/password":
+                return self._send(200, api_wifi_password((q.get("ap") or ["DEV.WIFI.AP1"])[0]))
+            if u.path == "/api/wan":
+                return self._send(200, api_wan())
+            if u.path == "/api/lanstatus":
+                return self._send(200, api_lan_status())
+            if u.path == "/api/ping":
+                return self._send(200, api_ping((parse_qs(u.query).get("host") or [""])[0]))
+            if u.path == "/api/speedtest":
+                return self._send(200, api_speedtest())
+            if u.path == "/api/dhcpleases":
+                return self._send(200, api_dhcp_leases())
+            if u.path == "/api/info":
+                return self._send(200, api_device_info())
+            if u.path == "/api/backup":
+                return self._send(200, api_backup())
+            if u.path == "/api/ops":
+                return self._send(200, api_ops())
+            if u.path.startswith("/api/qos/"):
+                sec = u.path.rsplit("/", 1)[-1]
+                if sec not in SECTIONS:
+                    return self._send(404, {"ok": False, "error": "unknown section"})
+                return self._send(200, api_read(sec))
             return self._send(404, {"ok": False, "error": "not found"})
         except Exception as e:
             return self._send(500, {"ok": False, "error": str(e)})
@@ -761,17 +785,17 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, {"ok": False, "error": "اكتب اليوزر والباسورد"})
                 if user != client.username or pwd != client.password:
                     return self._send(200, {"ok": False, "error": "يوزر أو باسورد غلط", "wrong": True})
-                with LOCK:
+                with LOGIN_LOCK:
                     blocked = time.time() < getattr(client, "_login_blocked_until", 0)
                     if blocked and not client.logged_in:
                         left = int(getattr(client, "_login_blocked_until", 0) - time.time())
                         return self._send(200, {"ok": False,
                                                 "error": f"الراوتر بيبرد لسه — استنى {left} ثانية"})
-                    if not client.logged_in:
-                        if not client.login():
-                            return self._send(200, {"ok": False, "error": "الراوتر رفض الدخول — جرّب بعد شوية"})
+                    if not client.ensure_login():
+                        return self._send(200, {"ok": False, "error": "الراوتر رفض الدخول — جرّب بعد شوية"})
                     AUTH["ok"] = True
                     AUTH["user"] = user
+                    threading.Thread(target=_warm, daemon=True).start()
                     return self._send(200, {"ok": True})
             if not AUTH["ok"]:
                 return self._send(401, {"ok": False, "error": "auth_required"})

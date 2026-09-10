@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 
 import requests
@@ -85,6 +86,7 @@ class ZteClient:
         self.username = username or _CFG["username"]
         self.password = password or _CFG["password"]
         self.s = requests.Session()
+        self._io = threading.RLock()  # firmware serializes sessions anyway; protects token state
         self.s.headers.update(UA)
         self.logged_in = False
         self._last_login_attempt = 0.0
@@ -163,10 +165,19 @@ class ZteClient:
             if not self.login():
                 raise ZteError("login failed (router may be rate-limiting; retry shortly)")
 
+    def ensure_login(self) -> bool:
+        """Bool variant used by the API server's serialized login path."""
+        try:
+            self._ensure_login()
+            return True
+        except Exception:
+            return False
+
     # ---- reads -----------------------------------------------------------
     def get(self, path: str) -> str:
         url = path if path.startswith("http") else self.base + path
-        return self.s.get(url, timeout=15).text
+        with self._io:
+            return self.s.get(url, timeout=15).text
 
     def page(self, pid: str, nextpage: str) -> str:
         return self.get(f"/getpage.lua?pid={pid}&nextpage={nextpage}")
