@@ -29,14 +29,63 @@ _cache = {}
 CACHE_TTL = 2.5
 TTL_OVERRIDE = {"devices": 45, "wifi": 45, "lanstatus": 45, "dashboard": 20,
                 "sec:macfilter": 45, "sec:macfilter_policy": 45,
-                "sec:downlimit_rules": 30, "sec:basic": 30}
+                "sec:downlimit_rules": 60, "sec:basic": 60,
+                "dash": 100, "sec:congestion": 90, "sec:classification": 90,
+                "sec:shaping": 90, "sec:policing": 120, "sec:firewall": 120,
+                "sec:urlfilter": 120, "sec:urlfilter_global": 120,
+                "sec:dhcp": 120, "sec:dhcp_static": 120, "sec:dhcp_leases": 60}
 
 # ---- web-app auth gate --------------------------------------------------
 # The app no longer auto-logs into the router: a human must submit the login
 # screen once per server start. Credentials are checked against config.json,
 # then forwarded to the router. Phones on the LAN use the same gate.
-AUTH = {"ok": False, "user": ""}
+AUTH = {"ok": False, "user": ""}          # legacy flag: someone is logged in
+OPEN_IPS = {}                              # client ip -> ts; per-device gate
 LOGIN_LOCK = threading.Lock()
+GATE_FILE = os.path.join(os.environ.get("APPDATA", "."), "RouterControl", "gate.json")
+
+
+def gate_token() -> str:
+    """Stable per-install secret: the login screen remembers via this token,
+    so reopening the panel after a service restart is one tap (or zero)."""
+    try:
+        with open(GATE_FILE, encoding="utf-8") as f:
+            t = json.load(f).get("token", "")
+            if t:
+                return t
+    except Exception:
+        pass
+    import secrets
+    t = secrets.token_hex(16)
+    try:
+        os.makedirs(os.path.dirname(GATE_FILE), exist_ok=True)
+        with open(GATE_FILE, "w", encoding="utf-8") as f:
+            json.dump({"token": t}, f)
+    except Exception:
+        pass
+    return t
+
+
+GATE_TTL = 7 * 24 * 3600  # a verified device stays open a week
+
+
+def client_ip(self):
+    return (self.headers.get("X-Forwarded-For") or self.client_address[0] or "").split(",")[0].strip()
+
+
+def check_gate(self) -> bool:
+    ip = client_ip(self)
+    now = time.time()
+    if ip in OPEN_IPS and now - OPEN_IPS[ip] < GATE_TTL:
+        OPEN_IPS[ip] = now
+        return True
+    t = self.headers.get("X-Gate", "") or parse_qs(urlparse(self.path).query).get("gate", [""])[0]
+    if t and t == gate_token():
+        OPEN_IPS[ip] = now
+        AUTH["ok"] = True
+        threading.Thread(target=_warm, daemon=True).start()
+        return True
+    return False
 EXECUTOR = ThreadPoolExecutor(max_workers=4)
 
 
@@ -87,15 +136,59 @@ INFO_PAGE = "ManagDiag_StatusManag_t.lp"
 INFO_EP = "ManagReg_lua.lua"
 
 
-def cached(key, fn):
+_refreshing = set()
+_refreshing_lock = threading.Lock()
+
+
+def _bg_refresh(key, fn):
+    with _refreshing_lock:
+        if key in _refreshing:
+            return
+        _refreshing.add(key)
+
+    def work():
+        try:
+            data = fn()
+            t = time.time()
+            if isinstance(data, dict) and data.get("ok") is False:
+                t -= TTL_OVERRIDE.get(key, CACHE_TTL) - 12
+            _cache[key] = {"t": t, "data": data}
+        except Exception:
+            pass
+        finally:
+            with _refreshing_lock:
+                _refreshing.discard(key)
+    threading.Thread(target=work, daemon=True).start()
+
+
+def cached(key, fn, force=False):
+    """Stale-while-revalidate: serve last-known data instantly (even if old),
+    refresh in background. The router's ~20 round-trips should never block a
+    click — stale beats 'Thinking…' every time on a phone."""
     now = time.time()
     ttl = TTL_OVERRIDE.get(key, CACHE_TTL)
     hit = _cache.get(key)
-    if hit and now - hit["t"] < ttl:
-        return hit["data"]
-    data = fn()
-    _cache[key] = {"t": now, "data": data}
+    if hit:
+        if force or now - hit["t"] > ttl:
+            _bg_refresh(key, fn)              # refresh behind the response
+        return hit["data"]                    # instant either way
+    try:
+        data = fn()                           # truly first fetch: must wait once
+    except Exception as e:                    # router cooling down etc.
+        if hit:                               # we have anything old -> show it
+            _bg_refresh(key, fn)
+            return hit["data"]
+        data = {"ok": False, "error": str(e), "instances": []}
+    if isinstance(data, dict) and data.get("ok") is False:
+        # login-cooldown failures must NOT storm the router every 3s — 30s backoff
+        _cache[key] = {"t": now - ttl + 30, "data": data}
+    else:
+        _cache[key] = {"t": now, "data": data}
     return data
+
+
+_REFRESH = {}
+USER_SEEN = {"t": 0.0}
 
 
 def _warm():
@@ -105,6 +198,59 @@ def _warm():
             fn_()
         except Exception:
             pass
+
+
+def _refresher():
+    """Keep the hot cache hot, but YIELD to real user traffic: the router is
+    slow and serial, so background work must never make a button feel laggy."""
+    while True:
+        time.sleep(15)
+        if not AUTH["ok"]:
+            continue
+        if time.time() - USER_SEEN["t"] < 6:
+            continue  # a human is clicking right now — hands off the router
+        for key, fn_ in (("devices", api_devices), ("wifi", api_wifi),
+                         ("lanstatus", api_lan_status), ("wan", api_wan),
+                         ("dash", api_dashboard)):
+            if time.time() - USER_SEEN["t"] < 2:
+                break  # user jumped in mid-cycle
+            _REFRESH[key] = True
+            try:
+                fn_()
+            except Exception:
+                pass
+            _REFRESH.pop(key, None)
+
+
+threading.Thread(target=_refresher, daemon=True).start()
+
+
+def _boot_prewarm():
+    """On service start, proactively warm the cache (router may still be
+    booting, so retry) — the user's first open is then instant, no 20s wait."""
+    for attempt in range(60):
+        try:
+            # ONE background thread walks the whole menu sequentially: one
+            # router session, no login pile-up, every tab warm within ~1 min
+            # of service start. First-open-per-tab (20-50s of serial router
+            # round-trips) becomes 0.00s cache hits for every device.
+            for fn_ in (api_devices, api_wifi, api_lan_status, api_wan,
+                        api_dashboard, api_device_info):
+                try:
+                    fn_()
+                except Exception:
+                    pass
+            for sec in SECTIONS:
+                try:
+                    api_read(sec)
+                except Exception:
+                    pass
+            return
+        except Exception:
+            time.sleep(10)
+
+
+threading.Thread(target=_boot_prewarm, daemon=True).start()
 
 
 def invalidate():
@@ -212,7 +358,7 @@ def api_devices():
             for d in devs:
                 d["throttle"] = None
         return {"ok": True, "devices": devs}
-    return cached("devices", fn)
+    return cached("devices", fn, force=_REFRESH.get("devices", False))
 
 
 def api_set_name(mac, name):
@@ -244,32 +390,59 @@ def _totals():
     return tot
 
 
+_traffic_snap = {"data": {"ok": True, "series": [], "rx_rate": 0, "tx_rate": 0,
+                          "dsl_rate": 0, "dsl_up": 0, "up_time": 0}}
+
+
+_sampler_started = {"b": False}
+
+
 def api_traffic():
-    now = time.time()
-    t = _totals()
-    out = dict(t)
-    out["dsl_rate"] = 0
-    try:
-        dsl = client.parse_instances(client.read_endpoint(WAN_PAGE, DSL_EP))
-        if dsl:
-            out["dsl_rate"] = int(dsl[0].get("Downstream_current_rate") or 0) * 1000
-            out["dsl_up"] = int(dsl[0].get("Upstream_current_rate") or 0) * 1000
-            out["up_time"] = int(dsl[0].get("Showtime_start") or 0)
-    except Exception:
-        pass
-    prev, pt = _traffic_state["prev"], _traffic_state["prev_t"]
-    dt = max(now - pt, 0.5)
-    rx_rate = tx_rate = 0
-    if prev:
-        rx = max(0, (t["wifi_rx"] + t["lan_rx"]) - (prev["wifi_rx"] + prev["lan_rx"]))
-        tx = max(0, (t["wifi_tx"] + t["lan_tx"]) - (prev["wifi_tx"] + prev["lan_tx"]))
-        rx_rate, tx_rate = rx * 8 / dt, tx * 8 / dt
-    _traffic_state["prev"], _traffic_state["prev_t"] = t, now
-    _traffic_state["series"].append([round(rx_rate), round(tx_rate)])
-    _traffic_state["series"] = _traffic_state["series"][-60:]
-    out.update({"rx_rate": int(rx_rate), "tx_rate": int(tx_rate),
-                "series": _traffic_state["series"], "ok": True})
-    return out
+    if not _sampler_started["b"]:
+        _sampler_started["b"] = True
+        threading.Thread(target=_traffic_sampler, daemon=True).start()
+    return _traffic_snap["data"]
+
+
+def _traffic_sampler():
+    """Background poller: UI reads the last snapshot instantly, one router
+    touch every 3s total (was: every client every tick — phone killer)."""
+    prev, pt = None, 0.0
+    dsl_last = {"dsl_rate": 0, "dsl_up": 0, "up_time": 0, "t": 0.0}
+    while True:
+        time.sleep(3)
+        if time.time() - USER_SEEN["t"] < 1.5:
+            continue  # a click is in flight — let the router breathe for the UI
+        try:
+            now = time.time()
+            t = _totals()
+            out = dict(t)
+            if now - dsl_last["t"] > 30:  # line stats only every 30s
+                dsl_last.update({"t": now})
+                try:
+                    dsl = client.parse_instances(client.read_endpoint(WAN_PAGE, DSL_EP))
+                    if dsl:
+                        dsl_last["dsl_rate"] = int(dsl[0].get("Downstream_current_rate") or 0) * 1000
+                        dsl_last["dsl_up"] = int(dsl[0].get("Upstream_current_rate") or 0) * 1000
+                        dsl_last["up_time"] = int(dsl[0].get("Showtime_start") or 0)
+                except Exception:
+                    pass
+            out.update(dsl_last)
+            dt = max(now - pt, 0.5)
+            rx_rate = tx_rate = 0
+            if prev:
+                rx = max(0, (t["wifi_rx"] + t["lan_rx"]) - (prev["wifi_rx"] + prev["lan_rx"]))
+                tx = max(0, (t["wifi_tx"] + t["lan_tx"]) - (prev["wifi_tx"] + prev["lan_tx"]))
+                rx_rate, tx_rate = rx * 8 / dt, tx * 8 / dt
+            prev, pt = t, now
+            _traffic_state["prev"], _traffic_state["prev_t"] = t, now
+            _traffic_state["series"].append([round(rx_rate), round(tx_rate)])
+            _traffic_state["series"] = _traffic_state["series"][-60:]
+            out.update({"rx_rate": int(rx_rate), "tx_rate": int(tx_rate),
+                        "series": _traffic_state["series"], "ok": True})
+            _traffic_snap["data"] = out
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------- wifi
@@ -300,6 +473,8 @@ def wifi_conf():
 
 
 def api_wifi():
+    if _REFRESH.get("wifi"):
+        _cache.pop("wifi:aps", None); _cache.pop("wifi:radio", None); _cache.pop("wifi:conf", None)
     out = wifi_aps()
     out["radio"] = wifi_radio()
     out["conf"] = wifi_conf()
@@ -539,7 +714,7 @@ def api_wan():
                                               "Downstream_attenuation", "Upstream_noise_margin",
                                               "DownCrc_errors", "UpCrc_errors", "Showtime_start",
                                               "Link_retrain") if k in d}}
-    return cached("wan", fn)
+    return cached("wan", fn, force=_REFRESH.get("wan", False))
 
 
 def api_dashboard():
@@ -550,17 +725,29 @@ def api_dashboard():
         f_dv = EXECUTOR.submit(api_devices)
         f_w = EXECUTOR.submit(api_wan)
         f_i = EXECUTOR.submit(client.read_endpoint, INFO_PAGE, INFO_EP)
-        b = f_b.result()
+        try:
+            b = f_b.result()
+        except Exception:
+            b = {"instances": []}
         out["qos_enabled"] = b["instances"][0].get("Enable") if b["instances"] else None
-        dg = f_dg.result()
+        try:
+            dg = f_dg.result()
+        except Exception:
+            dg = {"instances": []}
         out["downlimit"] = dg["instances"][0] if dg["instances"] else {}
         try:
             out["devices_count"] = len(f_dv.result(timeout=20)["devices"])
         except Exception:
             out["devices_count"] = 0
-        w = f_w.result()
+        try:
+            w = f_w.result()
+        except Exception:
+            w = {"wan": {}, "dsl": {}}
         out["wan"], out["dsl"] = w["wan"], w["dsl"]
-        info = client.parse_instances(f_i.result())
+        try:
+            info = client.parse_instances(f_i.result())
+        except Exception:
+            info = []
         out["device_info"] = info[0] if info else {}
         tr = _traffic_state["series"]
         out["net"] = tr[-1] if tr else [0, 0]
@@ -578,7 +765,7 @@ def api_lan_status():
                               "speed": i.get("LinkSpeed", "?"), "duplex": i.get("LinkDuplex", ""),
                               "rx": i.get("BytesReceived", "0"), "tx": i.get("BytesSent", "0")})
         return {"ok": True, "ports": ports}
-    return cached("lanstatus", fn)
+    return cached("lanstatus", fn, force=_REFRESH.get("lanstatus", False))
 
 
 def api_dhcp_leases():
@@ -715,7 +902,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             if u.path == "/api/appstatus":
                 peer = self.client_address[0]
-                body = {"auth": AUTH["ok"], "user": AUTH["user"],
+                auth = check_gate(self)
+                body = {"auth": auth, "user": AUTH["user"],
                         "router": "ZXHN H168N V3.5",
                         "lan": lan_ip(), "port": 8766}
                 # prefill creds ONLY for the local machine (phone gets username only)
@@ -723,7 +911,7 @@ class Handler(BaseHTTPRequestHandler):
                     body["user"] = body["user"] or client.username
                     body["pass"] = client.password
                 return self._send(200, body)
-            if not AUTH["ok"]:
+            if not check_gate(self):
                 return self._send(401, {"ok": False, "error": "auth_required"})
             if u.path == "/api/login":
                 with LOGIN_LOCK:
@@ -795,9 +983,10 @@ class Handler(BaseHTTPRequestHandler):
                         return self._send(200, {"ok": False, "error": "الراوتر رفض الدخول — جرّب بعد شوية"})
                     AUTH["ok"] = True
                     AUTH["user"] = user
+                    OPEN_IPS[client_ip(self)] = time.time()
                     threading.Thread(target=_warm, daemon=True).start()
-                    return self._send(200, {"ok": True})
-            if not AUTH["ok"]:
+                    return self._send(200, {"ok": True, "token": gate_token()})
+            if not check_gate(self):
                 return self._send(401, {"ok": False, "error": "auth_required"})
             with LOCK:
                 if u.path.startswith("/api/qos/"):

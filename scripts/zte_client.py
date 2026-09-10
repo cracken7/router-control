@@ -87,6 +87,7 @@ class ZteClient:
         self.password = password or _CFG["password"]
         self.s = requests.Session()
         self._io = threading.RLock()  # firmware serializes sessions anyway; protects token state
+        self._visited = {}  # lp_page -> ts of last getpage visit
         self.s.headers.update(UA)
         self.logged_in = False
         self._last_login_attempt = 0.0
@@ -122,8 +123,15 @@ class ZteClient:
         The router bans further attempts for ~30-60s after a failure, and every
         attempt during a ban extends it — so we back off hard instead of retrying."""
         now = time.time()
-        if now < getattr(self, "_login_blocked_until", 0):
-            return False
+        deadline = getattr(self, "_login_blocked_until", 0)
+        if now < deadline:
+            # Wait OUT the self-imposed cooloff instead of failing fast:
+            # callers are background/SWR threads — an extra sleep beats a
+            # cached error that sits for half a minute on the UI.
+            remaining = deadline - now
+            if remaining > 75:
+                return False  # too far gone; give up this attempt
+            time.sleep(remaining + 0.5)
         wait = LOGIN_MIN_INTERVAL - (now - self._last_login_attempt)
         if wait > 0:
             time.sleep(wait)
@@ -146,6 +154,24 @@ class ZteClient:
             "action": "login", "_sessionTOKEN": st,
         }, timeout=10)
         self.logged_in = "frm_username" not in r2.text.lower()
+        if not self.logged_in:
+            # ZTE keeps ONE admin session: a zombie from a previous run (crash,
+            # restart, stale cookie) makes the router reject fresh logins.
+            # Try to evict it: logoff via the current page token, retry once.
+            try:
+                lo = self.s.post(self.base + "/", data={
+                    "IF_LogOff": "1", "sess_token": st, "Username": self.username,
+                }, timeout=10)
+                r1 = self.s.get(LOGIN_TOKEN_URL, timeout=10)
+                nonce2 = strip_tags(r1.text)
+                sha2 = hashlib.sha256((self.password + nonce2).encode("utf-8")).hexdigest()
+                r3 = self.s.post(self.base + "/", data={
+                    "Username": self.username, "Password": sha2,
+                    "action": "login", "_sessionTOKEN": st,
+                }, timeout=10)
+                self.logged_in = "frm_username" not in r3.text.lower()
+            except Exception:
+                pass
         if not self.logged_in:
             # failed attempt ⇒ router will reject retries for a while. Back off 45s.
             self._login_blocked_until = time.time() + 45
@@ -182,16 +208,31 @@ class ZteClient:
     def page(self, pid: str, nextpage: str) -> str:
         return self.get(f"/getpage.lua?pid={pid}&nextpage={nextpage}")
 
-    def read_endpoint(self, lp_page: str, endpoint: str) -> str:
-        """Visit the .lp page then GET the data endpoint (required pattern)."""
-        self._ensure_login()
-        self.page(1002, lp_page)
-        body = self.get("/common_page/" + endpoint)
-        if "SessionTimeout" in body or "404 Not Found" in body:
-            time.sleep(3)
-            self.logged_in = False
-            self._ensure_login()
+    PAGE_VISIT_TTL = 60.0  # seconds the firmware remembers our "page open"
+
+    def _visit(self, lp_page: str):
+        now = time.time()
+        if now - self._visited.get(lp_page, 0) > self.PAGE_VISIT_TTL:
             self.page(1002, lp_page)
+            self._visited[lp_page] = now
+
+    def read_endpoint(self, lp_page: str, endpoint: str) -> str:
+        """Visit the .lp page then GET the data endpoint (required pattern).
+        The visit is deduped for PAGE_VISIT_TTL: firmware grants a 60s window
+        per opened page, so back-to-back endpoints of one page cost ONE visit."""
+        self._ensure_login()
+        self._visit(lp_page)
+        body = self.get("/common_page/" + endpoint)
+        for attempt in range(2):  # firmware sometimes kills a session after
+            if "SessionTimeout" not in body and "404 Not Found" not in body:
+                break             # a peer restart — one more full re-login fixes it
+            time.sleep(3 + 2 * attempt)
+            self.logged_in = False
+            self._visited.clear()
+            self.s.close()
+            self.s = requests.Session()
+            self._ensure_login()
+            self._visit(lp_page)
             body = self.get("/common_page/" + endpoint)
         return body
 

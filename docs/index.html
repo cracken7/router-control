@@ -378,14 +378,18 @@ function toast(msg, err){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
   clearTimeout(t._h); t._h = setTimeout(()=>t.className = "toast", 3000);
 }
+function gateHdr(){
+  const t = localStorage.getItem("rc_gate");
+  return t ? {"X-Gate": t} : {};
+}
 async function jget(u){
-  const r = await fetch(API + u);
+  const r = await fetch(API + u, {headers: gateHdr()});
   if(r.status === 401){ showGate(); throw new Error("auth_required"); }
   if(!r.ok) throw new Error("HTTP "+r.status);
   return r.json();
 }
 async function jpost(u, b){
-  const r = await fetch(API + u, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b||{})});
+  const r = await fetch(API + u, {method:"POST", headers:{...{"Content-Type":"application/json"}, ...gateHdr()}, body:JSON.stringify(b||{})});
   if(r.status === 401){ showGate(); return {ok:false, error:"auth_required"}; }
   return r.json();
 }
@@ -446,6 +450,7 @@ async function gateLogin(){
   try{
     const r = await jpost("/api/applogin", {username:u, password:p});
     if(r.ok){
+      if(r.token) localStorage.setItem("rc_gate", r.token);
       if($("#remember").checked){ localStorage.setItem("rc_cred", btoa(unescape(encodeURIComponent(u + ":" + p)))); }
       else localStorage.removeItem("rc_cred");
       APP_AUTH = true;
@@ -1088,7 +1093,8 @@ async function prefillGate(){
       gateLogin();   // fully automatic on this device
       return;
     }
-    const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>({}));
+    const st = await fetch(API + "/api/appstatus", {headers: gateHdr()}).then(r=>r.json()).catch(()=>({}));
+    if(st.auth){ startApp(); return; }
     $("#gu").value = st.user || "";
     $("#gp").value = st.pass || "";
     if(REMOTE && !st.user){ $("#srvRow").style.display="block"; $("#srvInput").value = API.replace(/^https?:\/\//,"");
@@ -1115,7 +1121,7 @@ function startApp(){
   }, 30000);
 }
 (async function init(){
-  const st = await fetch(API + "/api/appstatus").then(r=>r.json()).catch(()=>null);
+  const st = await fetch(API + "/api/appstatus", {headers: gateHdr()}).then(r=>r.json()).catch(()=>null);
   if(st && st.auth){ startApp(); return; }
   showGate();
   prefillGate();
