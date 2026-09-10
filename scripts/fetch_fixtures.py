@@ -23,7 +23,7 @@ EXTRA_EPS = [
 ]
 
 c = ZteClient()
-print("LOGIN:", c.login("user", "etis"))
+print("LOGIN:", c.login())
 os.makedirs("fixtures", exist_ok=True)
 
 

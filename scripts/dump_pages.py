@@ -57,7 +57,7 @@ PAGES = [
 ]
 
 c = ZteClient()
-print("LOGIN:", c.login("user", "etis"))
+print("LOGIN:", c.login())
 os.makedirs("pages", exist_ok=True)
 
 results = {}

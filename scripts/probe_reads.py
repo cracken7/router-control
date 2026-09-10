@@ -3,7 +3,7 @@
 from zte_client import ZteClient
 
 c = ZteClient()
-print("LOGIN:", c.login("user", "etis"))
+print("LOGIN:", c.login())
 s = c.s
 
 tests = [

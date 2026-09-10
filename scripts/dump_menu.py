@@ -5,7 +5,7 @@ import re
 from zte_client import ZteClient
 
 c = ZteClient()
-ok = c.login("user", "etis")
+ok = c.login()
 print("LOGIN:", ok)
 main = c.get("/")
 open("logged_main.html", "w", encoding="utf-8").write(main)
