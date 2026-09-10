@@ -6,138 +6,186 @@
 <title>لوحة تحكم الراوتر — ZTE H168N</title>
 <style>
 :root{
-  --bg:#070b14; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.085);
+  --bg:#05080f; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.08);
   --line:rgba(255,255,255,.09); --tx:#eaf0f8; --mut:#8fa0b6;
   --acc:#4cc9f0; --acc2:#9d4edd; --ok:#2ee6a8; --bad:#ff5d73; --warn:#ffc857;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scrollbar-color:#334 rgba(0,0,0,.2)}
 body{
-  font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;
-  background-image:
-    radial-gradient(1000px 540px at 88% -12%, rgba(76,201,240,.16), transparent 62%),
-    radial-gradient(760px 460px at -8% 28%, rgba(157,78,221,.15), transparent 62%),
-    radial-gradient(640px 420px at 52% 112%, rgba(46,230,168,.09), transparent 62%);
-  background-attachment:fixed;overflow-x:hidden;
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);
+  min-height:100vh;overflow-x:hidden;position:relative;
 }
-.wrap{max-width:1120px;margin:0 auto;padding:24px 18px 90px}
-header{display:flex;align-items:center;gap:14px;margin-bottom:18px;animation:rise .5s ease}
-.logo{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-size:25px;position:relative;
-  background:linear-gradient(135deg,rgba(76,201,240,.3),rgba(157,78,221,.3));border:1px solid var(--line)}
-.logo::after{content:"";position:absolute;inset:-4px;border-radius:20px;background:
-  linear-gradient(135deg,rgba(76,201,240,.25),transparent 60%);filter:blur(10px);z-index:-1;animation:pulse 3s infinite}
-@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
-@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-h1{font-size:20px;font-weight:800;background:linear-gradient(90deg,#4cc9f0,#c77dff,#2ee6a8);
-  background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+/* ═══ AURORA ═══ */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;mix-blend-mode:screen}
+.aurora i:nth-child(1){width:56vw;height:56vw;top:-18%;right:-10%;background:radial-gradient(circle,#0a4d7a,#062a45 60%,transparent);animation:drift1 22s ease-in-out infinite alternate}
+.aurora i:nth-child(2){width:44vw;height:44vw;bottom:-12%;left:-8%;background:radial-gradient(circle,#3d1a6e,#1c0b36 60%,transparent);animation:drift2 26s ease-in-out infinite alternate}
+.aurora i:nth-child(3){width:34vw;height:34vw;top:30%;left:40%;background:radial-gradient(circle,#0a5e4a,#04281f 60%,transparent);animation:drift3 30s ease-in-out infinite alternate;opacity:.35}
+@keyframes drift1{to{transform:translate(-8vw,10vh) scale(1.15)}}
+@keyframes drift2{to{transform:translate(10vw,-8vh) scale(1.2)}}
+@keyframes drift3{to{transform:translate(-6vw,-12vh) scale(.85)}}
+.wrap{max-width:1140px;margin:0 auto;padding:26px 18px 100px;position:relative;z-index:1}
+/* ═══ ANIM UTILS ═══ */
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes shine{to{background-position:200%}}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rise{animation:rise .5s cubic-bezier(.2,.7,.3,1) both}
+/* ═══ HEADER ═══ */
+header{display:flex;align-items:center;gap:15px;margin-bottom:20px}
+.logo{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;font-size:26px;position:relative;
+  background:linear-gradient(135deg,rgba(76,201,240,.35),rgba(157,78,221,.35));border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 8px 32px rgba(76,201,240,.18)}
+.logo::after{content:"";position:absolute;inset:-5px;border-radius:22px;background:linear-gradient(135deg,var(--acc),transparent 65%);filter:blur(12px);opacity:.35;animation:pulse 3.5s infinite;z-index:-1}
+.logo .wave{position:absolute;inset:0;border-radius:17px;border:2px solid rgba(76,201,240,.5);animation:ripple 2.4s infinite}
+@keyframes ripple{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.55);opacity:0}}
+h1{font-size:21px;font-weight:800;background:linear-gradient(90deg,#4cc9f0,#c77dff,#2ee6a8,#4cc9f0);
+  background-size:250%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
 .sub{color:var(--mut);font-size:12px;margin-top:3px}
-.status-pill{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);
-  background:var(--panel);border:1px solid var(--line);padding:8px 15px;border-radius:99px;backdrop-filter:blur(10px)}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 9px var(--bad);transition:.3s}
-.dot.on{background:var(--ok);box-shadow:0 0 9px var(--ok)}
-nav{display:flex;gap:9px;margin:18px 0 22px;flex-wrap:wrap;animation:rise .5s .05s both}
-nav button{background:var(--panel);border:1px solid var(--line);color:var(--mut);padding:10px 19px;
-  border-radius:13px;cursor:pointer;font-size:13.5px;font-family:inherit;transition:.2s;backdrop-filter:blur(8px)}
-nav button:hover{color:var(--tx);border-color:rgba(255,255,255,.25);transform:translateY(-1px)}
-nav button.active{background:linear-gradient(135deg,rgba(76,201,240,.24),rgba(157,78,221,.24));
-  color:#fff;border-color:rgba(76,201,240,.5);box-shadow:0 4px 24px rgba(76,201,240,.15)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:19px;margin-bottom:16px;
-  backdrop-filter:blur(16px);animation:rise .45s both}
+.status-pill{margin-inline-start:auto;display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--mut);
+  background:rgba(10,16,28,.55);border:1px solid var(--line);padding:9px 16px;border-radius:99px;backdrop-filter:blur(14px);transition:.3s}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bad);box-shadow:0 0 10px var(--bad);transition:.4s}
+.dot.on{background:var(--ok);box-shadow:0 0 12px var(--ok);animation:pulse 2.6s infinite}
+/* ═══ NAV ═══ */
+nav{display:flex;gap:10px;margin:20px 0 24px;flex-wrap:wrap}
+nav button{position:relative;background:rgba(10,16,28,.5);border:1px solid var(--line);color:var(--mut);
+  padding:11px 20px;border-radius:14px;cursor:pointer;font-size:13.5px;font-family:inherit;
+  transition:.25s cubic-bezier(.2,.7,.3,1);backdrop-filter:blur(12px);overflow:hidden}
+nav button:hover{color:var(--tx);border-color:rgba(255,255,255,.28);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+nav button.active{color:#fff;border-color:rgba(76,201,240,.55);
+  background:linear-gradient(135deg,rgba(76,201,240,.28),rgba(157,78,221,.28));
+  box-shadow:0 6px 28px rgba(76,201,240,.22),inset 0 1px 0 rgba(255,255,255,.12)}
+nav button.active::before{content:"";position:absolute;inset-inline:22%;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);animation:shine 2s linear infinite;
+  background-size:200%}
+/* ═══ CARDS ═══ */
+.card{background:rgba(10,16,28,.52);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;
+  backdrop-filter:blur(18px);animation:rise .5s cubic-bezier(.2,.7,.3,1) both;position:relative;overflow:hidden;
+  transition:border-color .3s,transform .3s}
+.card:hover{border-color:rgba(255,255,255,.16)}
+.card::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.03) 45%,transparent 60%);
+  pointer-events:none}
 .card h2{font-size:15.5px;margin-bottom:15px;display:flex;align-items:center;gap:9px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:13px;animation:rise .5s .1s both}
-.stat{background:linear-gradient(160deg,var(--panel2),transparent 70%);border:1px solid var(--line);
-  border-radius:16px;padding:15px 17px;transition:.25s}
-.stat:hover{border-color:rgba(76,201,240,.4);transform:translateY(-2px)}
-.stat .v{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:.2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(218px,1fr));gap:14px}
+.stat{background:rgba(10,16,28,.55);border:1px solid var(--line);border-radius:18px;padding:16px 18px;
+  transition:.3s cubic-bezier(.2,.7,.3,1);position:relative;overflow:hidden}
+.stat::after{content:"";position:absolute;top:0;inset-inline-start:-30%;width:30%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);transition:.6s;transform:skewX(-20deg)}
+.stat:hover{border-color:rgba(76,201,240,.45);transform:translateY(-3px);box-shadow:0 12px 34px rgba(0,0,0,.4)}
+.stat:hover::after{inset-inline-start:130%}
+.stat .v{font-size:23px;font-weight:800;margin-top:7px;letter-spacing:.3px;min-height:29px}
 .stat .l{color:var(--mut);font-size:12px}
 .stat .s{color:var(--mut);font-size:11px;margin-top:4px;direction:ltr;text-align:right;opacity:.8}
-.netbars{display:flex;gap:4px;align-items:flex-end;height:34px;margin-top:8px}
-.netbars i{flex:1;background:linear-gradient(180deg,var(--acc),var(--acc2));border-radius:3px 3px 0 0;
-  min-height:2px;opacity:.85;transition:height .4s}
-.row{display:flex;align-items:center;justify-content:space-between;gap:13px;padding:12px 3px;border-bottom:1px dashed var(--line)}
+.netbars{display:flex;gap:5px;align-items:flex-end;height:36px;margin-top:9px}
+.netbars i{flex:1;border-radius:4px 4px 0 0;min-height:3px;transition:height .5s cubic-bezier(.3,.8,.3,1)}
+.netbars i:first-child{background:linear-gradient(180deg,var(--acc),#0e6ea8)}
+.netbars i:last-child{background:linear-gradient(180deg,#c77dff,var(--acc2))}
+canvas{display:block;width:100%;height:110px}
+/* ═══ ROWS/TABLES ═══ */
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 4px;border-bottom:1px dashed var(--line);transition:background .2s}
+.row:hover{background:rgba(255,255,255,.02)}
 .row:last-child{border-bottom:none}
 .row .name{font-size:13.5px}
 .row .meta{color:var(--mut);font-size:11.5px;margin-top:3px;direction:ltr;text-align:left;word-break:break-all}
 .note{color:var(--mut);font-size:12px;line-height:1.9}
-.switch{position:relative;width:46px;height:25px;flex:none}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:99px;cursor:pointer;transition:.22s}
-.slider:before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;inset-inline-start:3px;transition:.22s}
-.switch input:checked + .slider{background:linear-gradient(135deg,var(--ok),var(--acc))}
-.switch input:checked + .slider:before{transform:translateX(-21px)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 th{color:var(--mut);font-weight:600;text-align:right;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
-tr:hover td{background:rgba(255,255,255,.03)}
-.badge{display:inline-block;padding:3px 11px;border-radius:99px;font-size:11px;border:1px solid var(--line);white-space:nowrap}
-.badge.on{color:var(--ok);border-color:rgba(46,230,168,.4);background:rgba(46,230,168,.08)}
+tr{animation:rise .35s both}
+tr:hover td{background:rgba(76,201,240,.04)}
+/* ═══ BADGES ═══ */
+.badge{display:inline-block;padding:3.5px 12px;border-radius:99px;font-size:11px;border:1px solid var(--line);white-space:nowrap;animation:fadeIn .4s}
+.badge.on{color:var(--ok);border-color:rgba(46,230,168,.4);background:rgba(46,230,168,.09)}
 .badge.off{color:var(--mut)}
-.badge.ban{color:var(--bad);border-color:rgba(255,93,115,.45);background:rgba(255,93,115,.09)}
-.badge.warn{color:var(--warn);border-color:rgba(255,200,87,.4);background:rgba(255,200,87,.08)}
+.badge.ban{color:var(--bad);border-color:rgba(255,93,115,.45);background:rgba(255,93,115,.1)}
+.badge.warn{color:var(--warn);border-color:rgba(255,200,87,.4);background:rgba(255,200,87,.09)}
 .mono{direction:ltr;font-family:Consolas,monospace;font-size:11.5px;color:var(--mut)}
-.btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff;padding:9px 17px;
-  border-radius:11px;cursor:pointer;font-family:inherit;font-size:12.5px;transition:.2s}
-.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
-.btn.red{background:linear-gradient(135deg,var(--bad),#c9184a)}
-.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mut)}
+/* ═══ SWITCH ═══ */
+.switch{position:relative;width:47px;height:26px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:99px;cursor:pointer;transition:.28s cubic-bezier(.4,1.6,.5,1)}
+.slider:before{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;inset-inline-start:3px;transition:.28s cubic-bezier(.4,1.6,.5,1);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.switch input:checked + .slider{background:linear-gradient(135deg,var(--ok),var(--acc));box-shadow:0 0 14px rgba(46,230,168,.35)}
+.switch input:checked + .slider:before{transform:translateX(-21px)}
+/* ═══ BUTTONS ═══ */
+.btn{position:relative;background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff;padding:9.5px 18px;
+  border-radius:12px;cursor:pointer;font-family:inherit;font-size:12.5px;transition:.22s;overflow:hidden;
+  box-shadow:0 4px 18px rgba(76,201,240,.25)}
+.btn:hover{filter:brightness(1.18);transform:translateY(-2px);box-shadow:0 8px 26px rgba(76,201,240,.35)}
+.btn:active{transform:translateY(0) scale(.97)}
+.btn.red{background:linear-gradient(135deg,var(--bad),#c9184a);box-shadow:0 4px 18px rgba(255,93,115,.25)}
+.btn.green{background:linear-gradient(135deg,var(--ok),#0e9f6e);box-shadow:0 4px 18px rgba(46,230,168,.22)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);box-shadow:none}
 .btn.ghost:hover{color:var(--tx);border-color:rgba(255,255,255,.3)}
-.btn:disabled{opacity:.45;cursor:wait;transform:none}
-.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
-.subnav{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap}
-.subnav button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 15px;
-  border-radius:10px;cursor:pointer;font-size:12px;font-family:inherit;transition:.2s}
-.subnav button.active{color:var(--acc);border-color:rgba(76,201,240,.45);background:rgba(76,201,240,.07)}
+.btn:disabled{opacity:.5;cursor:wait;transform:none}
+.btn-sm{padding:6.5px 13px;font-size:11.5px;border-radius:10px}
+.btn .rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:ripple .6s linear;pointer-events:none}
+/* ═══ SUBNAV ═══ */
+.subnav{display:flex;gap:8px;margin-bottom:17px;flex-wrap:wrap}
+.subnav button{background:rgba(10,16,28,.4);border:1px solid var(--line);color:var(--mut);padding:7.5px 16px;
+  border-radius:11px;cursor:pointer;font-size:12px;font-family:inherit;transition:.22s}
+.subnav button:hover{color:var(--tx);transform:translateY(-1px)}
+.subnav button.active{color:var(--acc);border-color:rgba(76,201,240,.5);background:rgba(76,201,240,.08);box-shadow:0 0 16px rgba(76,201,240,.12)}
+/* ═══ MISC ═══ */
 .hidden{display:none !important}
-.load{text-align:center;color:var(--mut);padding:28px;font-size:13px}
-.empty{color:var(--mut);font-size:13px;padding:18px;text-align:center}
-input.txt{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--tx);border-radius:9px;
-  padding:8px 12px;font-family:inherit;font-size:13px;direction:ltr;text-align:left}
-input.txt:focus,select.sel:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(76,201,240,.12)}
-select.sel{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx);border-radius:9px;padding:8px 10px;font-family:inherit;font-size:13px}
-.modal{position:fixed;inset:0;background:rgba(4,7,13,.75);backdrop-filter:blur(8px);z-index:50;display:grid;place-items:center;animation:fade .2s}
-@keyframes fade{from{opacity:0}}
-.modal-box{background:#111827;border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:26px;width:min(460px,92vw);
-  box-shadow:0 30px 90px rgba(0,0,0,.6);animation:rise .25s}
-.modal-box h3{font-size:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
-.modal-box h3 .x{cursor:pointer;color:var(--mut);font-size:19px}
-.frm{display:flex;flex-direction:column;gap:13px}
-.frm label{font-size:12px;color:var(--mut);display:block;margin-bottom:6px}
-.frm .frm-row{display:flex;gap:10px}
-.frm .frm-row>div{flex:1}
-.err{color:#ffb3bd;font-size:12px;margin-top:11px}
-.toast{position:fixed;bottom:24px;inset-inline-start:50%;transform:translateX(50%);background:#141c2e;
-  border:1px solid var(--line);padding:12px 24px;border-radius:14px;font-size:13px;opacity:0;
-  pointer-events:none;transition:.28s;z-index:99;max-width:92vw;box-shadow:0 14px 44px rgba(0,0,0,.5)}
-.toast.show{opacity:1;transform:translateX(50%) translateY(-4px)}
-.toast.err{border-color:rgba(255,93,115,.55);color:#ffb3bd}
-.danger-zone{border-color:rgba(255,93,115,.32)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
-.chip{background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:#9be0f7;font-size:10.5px;
-  padding:3px 10px;border-radius:99px;cursor:pointer;transition:.15s}
-.chip:hover{background:rgba(76,201,240,.22)}
-.chip.red{background:rgba(255,93,115,.1);border-color:rgba(255,93,115,.35);color:#ffb3bd}
-.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;flex:none;
-  background:linear-gradient(135deg,rgba(76,201,240,.2),rgba(157,78,221,.2));border:1px solid var(--line)}
-.feed{max-height:190px;overflow:auto}
-.feed .frow{display:flex;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--line);font-size:12px;color:var(--mut)}
+.load{text-align:center;color:var(--mut);padding:30px;font-size:13px}
+.load::before{content:"◌";display:inline-block;font-size:22px;color:var(--acc);animation:spin 1s linear infinite;margin-inline-end:8px;vertical-align:-3px}
+.empty{color:var(--mut);font-size:13px;padding:20px;text-align:center;background:rgba(255,255,255,.015);border-radius:14px;border:1px dashed var(--line)}
+input.txt{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:8.5px 12px;
+  font-family:inherit;font-size:13px;direction:ltr;text-align:left;transition:.2s}
+input.txt:focus,select.sel:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3.5px rgba(76,201,240,.14)}
+select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:8.5px 11px;font-family:inherit;font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{background:rgba(76,201,240,.09);border:1px solid rgba(76,201,240,.3);color:#9be0f7;font-size:10.5px;
+  padding:4px 11px;border-radius:99px;cursor:pointer;transition:.18s;user-select:none}
+.chip:hover{background:rgba(76,201,240,.24);transform:translateY(-1px)}
+.chip.red{background:rgba(255,93,115,.09);border-color:rgba(255,93,115,.35);color:#ffb3bd}
+.chip.red:hover{background:rgba(255,93,115,.22)}
+.avatar{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:18px;flex:none;
+  background:linear-gradient(135deg,rgba(76,201,240,.22),rgba(157,78,221,.22));border:1px solid var(--line)}
+.feed{max-height:200px;overflow:auto}
+.feed .frow{display:flex;gap:10px;padding:8.5px 3px;border-bottom:1px dashed var(--line);font-size:12px;color:var(--mut);animation:fadeIn .4s both}
 .feed .frow b{color:var(--tx);font-weight:600}
-canvas{display:block;width:100%;height:110px}
-@media(max-width:640px){.wrap{padding:14px 9px 70px}}
+/* ═══ MODAL ═══ */
+.modal{position:fixed;inset:0;background:rgba(3,6,12,.78);backdrop-filter:blur(10px);z-index:50;display:grid;place-items:center;animation:fadeIn .22s}
+.modal-box{background:linear-gradient(160deg,#131c2f,#0c1424);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:27px;
+  width:min(470px,92vw);box-shadow:0 34px 100px rgba(0,0,0,.7);animation:rise .3s cubic-bezier(.2,.8,.3,1.1)}
+.modal-box h3{font-size:16px;margin-bottom:19px;display:flex;justify-content:space-between;align-items:center}
+.modal-box h3 .x{cursor:pointer;color:var(--mut);font-size:20px;transition:.2s;padding:4px}
+.modal-box h3 .x:hover{color:var(--bad);transform:rotate(90deg)}
+.frm{display:flex;flex-direction:column;gap:14px}
+.frm label{font-size:12px;color:var(--mut);display:block;margin-bottom:6px}
+.frm .frm-row{display:flex;gap:11px}
+.frm .frm-row>div{flex:1}
+.err{color:#ffb3bd;font-size:12px;margin-top:12px}
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:26px;inset-inline-start:50%;transform:translateX(50%) translateY(16px);background:linear-gradient(160deg,#182438,#0e1828);
+  border:1px solid rgba(255,255,255,.15);padding:13px 26px;border-radius:15px;font-size:13px;opacity:0;pointer-events:none;
+  transition:.35s cubic-bezier(.2,.8,.3,1.1);z-index:99;max-width:92vw;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.toast.show{opacity:1;transform:translateX(50%) translateY(0)}
+.toast.err{border-color:rgba(255,93,115,.6);color:#ffb3bd}
+.danger-zone{border-color:rgba(255,93,115,.32)}
+.danger-zone:hover{border-color:rgba(255,93,115,.5)}
+@keyframes glow-border{0%,100%{box-shadow:0 0 0 0 rgba(76,201,240,0)}50%{box-shadow:0 0 24px 2px rgba(76,201,240,.12)}}
+.glow{animation:glow-border 4s infinite}
+@media(max-width:640px){.wrap{padding:14px 9px 80px}nav button{padding:9px 13px;font-size:12px}}
 </style>
 </head>
 <body>
+<div class="aurora"><i></i><i></i><i></i></div>
 <div class="wrap">
-  <header>
-    <div class="logo">📡</div>
+  <header class="rise">
+    <div class="logo"><span class="wave"></span>📡</div>
     <div>
       <h1>لوحة تحكم الراوتر</h1>
-      <div class="sub" id="devInfo">ZTE ZXHN H168N V3.5 — 192.168.1.1</div>
+      <div class="sub" id="devInfo">ZXHN H168N V3.5 — 192.168.1.1</div>
     </div>
     <div class="status-pill"><span class="dot" id="dot"></span><span id="connTxt">جارٍ الاتصال…</span></div>
   </header>
 
-  <nav>
+  <nav class="rise" style="animation-delay:.05s">
     <button data-view="dash" class="active">🏠 الرئيسية</button>
     <button data-view="qos">⚖️ QoS</button>
     <button data-view="devices">👥 الأجهزة</button>
@@ -149,30 +197,30 @@ canvas{display:block;width:100%;height:110px}
 
   <!-- DASH -->
   <section id="view-dash">
-    <div class="grid">
+    <div class="grid rise" style="animation-delay:.1s">
       <div class="stat"><div class="l">حالة الإنترنت</div><div class="v" id="stWan">—</div><div class="s" id="stWanS"></div>
-        <div class="netbars" id="nb"></div></div>
-      <div class="stat"><div class="l">التنزيل الآن</div><div class="v" id="stRx">—</div>
+        <div class="netbars" id="nb"><i style="height:4px"></i><i style="height:4px"></i></div></div>
+      <div class="stat glow"><div class="l">📥 التنزيل الآن</div><div class="v" id="stRx">—</div>
         <div class="s" id="stTx"></div><canvas id="spark"></canvas></div>
       <div class="stat"><div class="l">محرك QoS</div><div class="v" id="stQos">—</div>
-        <div style="margin-top:10px"><label class="switch"><input type="checkbox" id="swQos" onchange="toggleQos(this)"><span class="slider"></span></label></div></div>
-      <div class="stat"><div class="l">الأجهزة المتصلة</div><div class="v" id="stDev">—</div><div class="s" id="stDevS"></div></div>
+        <div style="margin-top:11px"><label class="switch"><input type="checkbox" id="swQos" onchange="toggleQos(this)"><span class="slider"></span></label></div></div>
+      <div class="stat"><div class="l">👥 الأجهزة المتصلة</div><div class="v" id="stDev">—</div><div class="s" id="stDevS"></div></div>
     </div>
-    <div class="card" style="margin-top:15px">
-      <h2>⚡ إجراءات سريعة</h2>
-      <div class="row"><div><div class="name">قوة خط VDSL</div><div class="note" id="dslNote">—</div></div>
+    <div class="card" style="animation-delay:.15s">
+      <h2>⚡ نبضة الخط</h2>
+      <div class="row"><div><div class="name">خط VDSL</div><div class="note" id="dslNote">—</div></div>
         <div class="badge on" id="dslSync">—</div></div>
-      <div class="row"><div><div class="name">سجل العمليات</div><div class="note">آخر التغييرات على الراوتر</div></div>
+      <div class="row"><div><div class="name">DNS المُوزّع</div><div class="note mono" id="dnsTxt">—</div></div>
+        <span class="badge off">من مزود الخدمة</span></div>
+      <div class="row"><div><div class="name">سجل العمليات</div><div class="note">كل التغييرات اللي حصلت على الراوتر</div></div>
         <button class="btn btn-sm ghost" onclick="openFeed()">عرض 📜</button></div>
-      <div class="row"><div><div class="name">تحديث البيانات</div><div class="note">قراءة حية من الراوتر</div></div>
-        <button class="btn" onclick="loadDash()">🔄 تحديث</button></div>
     </div>
-    <div class="card"><h2>🕒 الأحداث الأخيرة</h2><div id="feedMini" class="feed"></div></div>
+    <div class="card" style="animation-delay:.2s"><h2>🕒 الأحداث الأخيرة</h2><div id="feedMini" class="feed"></div></div>
   </section>
 
   <!-- QOS -->
   <section id="view-qos" class="hidden">
-    <div class="subnav">
+    <div class="subnav rise">
       <button data-q="basic" class="active">عام</button>
       <button data-q="classification">التصنيف</button>
       <button data-q="downlimit">حد التنزيل</button>
@@ -180,44 +228,47 @@ canvas{display:block;width:100%;height:110px}
       <button data-q="congestion">الازدحام</button>
       <button data-q="shaping">Shaping</button>
     </div>
-    <div id="qosBody"><div class="load">…</div></div>
+    <div id="qosBody"><div class="load">جارٍ القراءة</div></div>
   </section>
 
   <!-- DEVICES -->
   <section id="view-devices" class="hidden">
-    <div class="card">
-      <h2>👥 الأجهزة المتصلة <span style="margin-inline-start:auto"><button class="btn btn-sm ghost" onclick="loadDevices()">تحديث</button></span></h2>
-      <div id="devBody" class="load">جارٍ التحميل…</div>
-      <p class="note" style="margin-top:12px">💡 زرار ⛔ يحظر الجهاز من واي فاي (قابل للعكس) — وقوالب السرعة تضبط حد تنزيل جاهز للألعاب/الستريمنج.</p>
+    <div class="card rise">
+      <h2>👥 الأجهزة <span style="margin-inline-start:auto"><button class="btn btn-sm ghost" onclick="loadDevices()">🔄 تحديث</button></span></h2>
+      <div id="devBody" class="load">جارٍ التحميل</div>
+      <p class="note" style="margin-top:12px">💡 ⛔ يحظر الجهاز فوراً من واي فاي (الفك من قسم الحماية أو بنفس الزرار) · قوالب 🎮🎬📚 تضبط حد سرعة جاهز بضغطة.</p>
     </div>
   </section>
 
   <!-- WIFI -->
   <section id="view-wifi" class="hidden">
-    <div class="card"><h2>📶 الشبكة اللاسلكية</h2><div id="wifiBody" class="load">جارٍ التحميل…</div></div>
+    <div class="card rise"><h2>📶 الشبكة اللاسلكية</h2><div id="wifiBody" class="load">جارٍ التحميل</div></div>
   </section>
 
   <!-- LAN -->
   <section id="view-lan" class="hidden">
-    <div class="card"><h2>🔌 منافذ LAN</h2><div id="lanBody" class="load">…</div></div>
-    <div class="card"><h2>📜 عناوين DHCP الموزعة</h2><div id="dhcpBody" class="load">…</div></div>
+    <div class="card rise"><h2>🔌 منافذ LAN</h2><div id="lanBody" class="load">…</div></div>
+    <div class="card rise"><h2>📜 عناوين DHCP الموزعة</h2><div id="dhcpBody" class="load">…</div></div>
+    <div class="card rise"><h2>📌 حجز IP ثابت (Static Lease)</h2><div id="staticBody" class="load">…</div>
+      <p class="note" style="margin-top:10px">يضمان إن الجهاز ياخد نفس الـ IP دايماً — مفيد للقياس/المشاركة/الألعاب.</p></div>
   </section>
 
   <!-- SECURITY -->
   <section id="view-security" class="hidden">
-    <div class="card"><h2>🛡️ الجدار الناري</h2><div id="fwBody" class="load">…</div></div>
-    <div class="card"><h2>🚫 حجب المواقع (URL Filter)</h2><div id="urlBody" class="load">…</div></div>
+    <div class="card rise"><h2>🛡️ الجدار الناري</h2><div id="fwBody" class="load">…</div></div>
+    <div class="card rise"><h2>🚫 حجب المواقع (URL Filter)</h2><div id="urlBody" class="load">…</div></div>
+    <div class="card rise"><h2>⛔ الأجهزة المحظورة</h2><div id="banBody" class="load">…</div></div>
   </section>
 
   <!-- SYSTEM -->
   <section id="view-system" class="hidden">
-    <div class="card"><h2>ℹ️ بيانات الجهاز</h2><div id="sysInfo" class="load">…</div></div>
-    <div class="card"><h2>💾 نسخة احتياطية وإرجاع</h2><div id="bakBody" class="load">…</div></div>
-    <div class="card danger-zone">
+    <div class="card rise"><h2>ℹ️ بيانات الجهاز</h2><div id="sysInfo" class="load">…</div></div>
+    <div class="card rise"><h2>💾 نسخة احتياطية وإرجاع</h2><div id="bakBody" class="load">…</div></div>
+    <div class="card rise danger-zone">
       <h2>⚠️ منطقة الخطر</h2>
       <div class="row"><div><div class="name">إعادة تشغيل الراوتر</div><div class="note">حوالي ٥ دقايق بدون إنترنت</div></div>
         <button class="btn" onclick="askReboot()">🔄 ريستارت</button></div>
-      <div class="row"><div><div class="name">إرجاع إعدادات المصنع</div><div class="note">⚠️ مسح كل الإعدادات — استخدم النسخ الاحتياطي أولاً</div></div>
+      <div class="row"><div><div class="name">إرجاع إعدادات المصنع</div><div class="note">⚠️ مسح كل الإعدادات — خد نسخة أولاً</div></div>
         <button class="btn red" onclick="askReset()">☠️ Reset</button></div>
     </div>
   </section>
@@ -234,8 +285,29 @@ canvas{display:block;width:100%;height:110px}
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const API = (location.hostname === "127.0.0.1" || location.hostname === "localhost" || location.protocol === "file:") ? "" : "http://127.0.0.1:8766";
-let qosCache = {}, wifiCache = null, devicesCache = [], busy = false;
+let qosCache = {}, wifiCache = null, devicesCache = [], busy = false, sparkHist = [];
 
+/* ripple effect */
+document.addEventListener("click", e=>{
+  const b = e.target.closest(".btn");
+  if(!b) return;
+  const r = document.createElement("span"); r.className = "rip";
+  const rc = b.getBoundingClientRect();
+  const d = Math.max(rc.width, rc.height);
+  r.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-rc.left-d/2}px;top:${e.clientY-rc.top-d/2}px`;
+  b.appendChild(r); setTimeout(()=>r.remove(), 600);
+});
+/* animated counter */
+function countTo(el, target, suffix=""){
+  const from = +(el.dataset.v||0); el.dataset.v = target;
+  if(from===target){ el.textContent = target+suffix; return; }
+  const t0 = performance.now(), dur = 550;
+  (function step(t){
+    const p = Math.min((t-t0)/dur, 1), ease = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(from+(target-from)*ease)+suffix;
+    if(p<1) requestAnimationFrame(step);
+  })(t0);
+}
 function toast(msg, err){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
   clearTimeout(t._h); t._h = setTimeout(()=>t.className = "toast", 3000);
@@ -245,81 +317,80 @@ async function jpost(u, b){
   const r = await fetch(API + u, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b||{})});
   return r.json();
 }
-function esc(s){ return (s??"").toString().replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
+function esc(s){ return (s??"").toString().replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;","\"":"&quot;"}[c])); }
 function fmtRate(v){ if(v===undefined||v===null||v===""||isNaN(+v)) return "—"; v=+v;
   if(v>=1e6) return (v/1e6).toFixed(v%1e6?1:0)+" Mbps"; if(v>=1e3) return (v/1e3).toFixed(v%1e3?1:0)+" Kbps"; return v+" bps"; }
 function fmtDur(s){ s=+s||0; const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
   return (d?d+" ي ":"")+(h?h+" س ":"")+m+" د"; }
 function badge(on, t1, t0){ return `<span class="badge ${on?"on":"off"}">${on?(t1||"شغال"):(t0||"متوقف")}</span>`; }
 
-// ==================== traffic ====================
-let sparkHist = [];
+/* ==================== TRAFFIC ==================== */
 function drawSpark(){
-  const cv = $("#spark"); if(!cv) return;
+  const cv = $("#spark"); if(!cv||!cv.offsetWidth) return;
   const ctx = cv.getContext("2d");
   const W = cv.width = cv.offsetWidth*2, H = cv.height = 220;
   ctx.clearRect(0,0,W,H);
   const pts = sparkHist.slice(-60); if(pts.length<2) return;
   const max = Math.max(...pts.map(p=>p[0]||1), 1);
-  const grid = "rgba(255,255,255,.06)"; ctx.lineWidth=1;
-  for(let i=1;i<3;i++){ ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(0,H*i/3); ctx.lineTo(W,H*i/3); ctx.stroke(); }
-  const line=(idx,color)=>{ ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin="round";
-    pts.forEach((p,i)=>{ const x=W*i/(pts.length-1), y=H-((p[idx]||0)/max)*H*.92; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  for(let i=1;i<3;i++){ ctx.strokeStyle="rgba(255,255,255,.05)"; ctx.beginPath(); ctx.moveTo(0,H*i/3); ctx.lineTo(W,H*i/3); ctx.stroke(); }
+  const line=(idx,color,fillC)=>{
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.6; ctx.lineJoin="round"; ctx.lineCap="round";
+    pts.forEach((p,i)=>{ const x=W*i/(pts.length-1), y=H-((p[idx]||0)/max)*H*.9; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
     ctx.stroke();
-    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,color.replace("rgb","rgba").replace(")",",.18)")); g.addColorStop(1,"transparent");
-    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); };
-  line(0,"rgb(76,201,240)"); line(1,"rgb(157,78,221)");
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle=fillC; ctx.fill();
+  };
+  line(1,"#9d4edd","rgba(157,78,221,.10)");
+  line(0,"#4cc9f0","rgba(76,201,240,.12)");
 }
 async function tickTraffic(){
   if(busy) return;
   try{
     const t = await jget("/api/traffic");
     if(!t.ok) return;
-    $("#stRx").textContent = fmtRate(t.rx_rate);
+    countTo($("#stRx"), +(fmtRate(t.rx_rate).split(" ")[0]), " "+fmtRate(t.rx_rate).split(" ")[1]);
     $("#stTx").textContent = "↑ " + fmtRate(t.tx_rate);
     sparkHist.push([t.rx_rate, t.tx_rate]);
     drawSpark();
-    const nb = $("#nb");
-    const mx = Math.max(t.rx_rate, 1e5);
-    nb.innerHTML = `<i style="height:${Math.min(100,30+t.rx_rate/mx*70)}%"></i>
-      <i style="height:${Math.min(100,20+t.tx_rate/Math.max(t.tx_rate,1e4)*60)}%;background:linear-gradient(180deg,#c77dff,#9d4edd)"></i>`;
+    const mx = Math.max(t.rx_rate, 2e5);
+    $("#nb").innerHTML = `<i style="height:${Math.max(6,Math.min(100,t.rx_rate/mx*90))}%"></i>
+      <i style="height:${Math.max(6,Math.min(100,t.tx_rate/Math.max(t.tx_rate,5e4)*70))}%"></i>`;
   }catch(e){}
 }
 
-// ==================== login / dash ====================
+/* ==================== BOOT/DASH ==================== */
 async function boot(){
   try{
     const s = await jget("/api/status");
     if(s.ok){ setConn(true); return true; }
     const l = await jget("/api/login");
     setConn(!!l.ok);
-    if(!l.ok) $("#connTxt").textContent = l.blocked ? "محاولة دخول فاشلة… استنى ٥٠ ثانية" : "فشل الدخول";
+    if(!l.ok) $("#connTxt").textContent = l.blocked ? "محاولة فاشلة… استنى ٥٠ ثانية" : "فشل الدخول";
     return !!l.ok;
   }catch(e){ $("#connTxt").textContent = "السيرفر مغلق"; return false; }
 }
 function setConn(ok){
   $("#dot").classList.toggle("on", ok);
-  $("#connTxt").textContent = ok ? "متصل بالراوتر" : ($("#connTxt").textContent.includes("استنى") ? $("#connTxt").textContent : "غير متصل");
+  if(ok) $("#connTxt").textContent = "متصل بالراوتر";
 }
 async function loadDash(){
   try{
     const d = await jget("/api/dashboard");
-    const cs = {"Connected":["متصل ✅","var(--ok)"],"Disconnected":["مقطوع ⛔","var(--bad)"],"Connecting":["جارٍ الاتصال…","var(--warn)"]};
+    const cs = {"Connected":["متصل ✅","var(--ok)"],"Disconnected":["مقطوع ⛔","var(--bad)"],"Connecting":["جارٍ…","var(--warn)"]};
     const wn = cs[d.wan?.ConnStatus] || [d.wan?.ConnStatus||"—","var(--tx)"];
     $("#stWan").innerHTML = `<span style="color:${wn[1]}">${esc(wn[0])}</span>`;
     $("#stWanS").textContent = (d.wan?.TransType||"") + (d.wan?.UpTime?" · متصل من "+fmtDur(d.wan.UpTime):"");
     $("#stQos").textContent = d.qos_enabled==="1" ? "مُفعّل ✅" : d.qos_enabled==="0" ? "متوقف ⛔" : "—";
     $("#swQos").checked = d.qos_enabled==="1";
-    const nDev = d.devices_count;
-    $("#stDev").textContent = nDev ?? "—";
+    countTo($("#stDev"), d.devices_count||0);
+    $("#stDevS").textContent = (d.net&&d.net[0]>50000) ? "🟢 تنزيل نشط" : "";
     const dsl = d.dsl||{};
-    $("#stDevS").textContent = ((d.net&&d.net[0])?"تنزيل نشط":"") ;
-    $("#dslNote").textContent = `VDSL2 ${dsl.CurrentProfile||""} · ${(+dsl.Downstream_current_rate/1000).toFixed(0)}↓ / ${(+(dsl.Upstream_current_rate||0)/1000).toFixed(0)}↑ Mbps · هامش ${(dsl.Downstream_noise_margin/10).toFixed(1)}dB`;
-    $("#dslSync").textContent = dsl.Status==="Up" ? "متزامن" : dsl.Status||"—";
+    $("#dslNote").textContent = `VDSL2 ${dsl.CurrentProfile||""} · ${(+dsl.Downstream_current_rate/1000).toFixed(0)}↓ / ${(+(dsl.Upstream_current_rate||0)/1000).toFixed(0)}↑ Mbps · هامش ضوضاء ${(dsl.Downstream_noise_margin/10).toFixed(1)}dB`;
+    $("#dslSync").textContent = dsl.Status==="Up" ? "متوازن ✓" : dsl.Status||"—";
     $("#dslSync").className = "badge " + (dsl.Status==="Up"?"on":"off");
-    if(d.device_info?.SoftwareVer){
+    $("#dnsTxt").textContent = [d.wan?.DNS1, d.wan?.DNS2].filter(x=>x&&x!=="0.0.0.0").join(" · ") || "—";
+    if(d.device_info?.SoftwareVer)
       $("#devInfo").textContent = (d.device_info.ModelName||"").replace(/&#32;/g," ")+" — fw "+d.device_info.SoftwareVer;
-    }
   }catch(e){}
 }
 async function toggleQos(el){
@@ -331,28 +402,29 @@ async function toggleQos(el){
 async function loadFeed(){
   try{
     const f = await jget("/api/ops");
-    const html = f.log.slice(0,8).map(o=>`<div class="frow"><span class="mono">${new Date(o.t*1000).toLocaleTimeString("ar-EG")}</span>
-      <b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || '<div class="empty">لا عمليات بعد</div>';
-    $("#feedMini").innerHTML = html;
     window._feed = f.log;
+    const ar = new Intl.DateTimeFormat("ar-EG",{hour:"2-digit",minute:"2-digit"});
+    $("#feedMini").innerHTML = f.log.slice(0,8).map(o=>`<div class="frow"><span class="mono">${ar.format(new Date(o.t*1000))}</span>
+      <b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || '<div class="empty">لا عمليات بعد — ابدأ بأي تغيير 🚀</div>';
   }catch(e){}
 }
 function openFeed(){
   $("#modalTitle").textContent = "📜 سجل العمليات";
   $("#modalErr").classList.add("hidden");
+  const ar = new Intl.DateTimeFormat("ar-EG",{dateStyle:"short",timeStyle:"short"});
   $("#modalBody").innerHTML = `<div class="feed">${(window._feed||[]).map(o=>`<div class="frow">
-    <span class="mono">${new Date(o.t*1000).toLocaleString("ar-EG")}</span><b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || "لا عمليات"}</div>`;
+    <span class="mono">${ar.format(new Date(o.t*1000))}</span><b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || "لا عمليات"}</div>`;
   $("#modal").classList.remove("hidden");
 }
 
-// ==================== QOS ====================
+/* ==================== QOS ==================== */
 $$(".subnav button").forEach(b=>b.onclick=()=>{
   $$(".subnav button").forEach(x=>x.classList.remove("active"));
   b.classList.add("active"); renderQos(b.dataset.q);
 });
 async function renderQos(sec){
   const body = $("#qosBody");
-  body.innerHTML = '<div class="load">جارٍ القراءة من الراوتر…</div>';
+  body.innerHTML = '<div class="load">جارٍ القراءة من الراوتر</div>';
   try{
     if(sec==="downlimit"){
       const [g, r] = await Promise.all([jget("/api/qos/downlimit_global"), jget("/api/qos/downlimit_rules")]);
@@ -371,43 +443,44 @@ function qosSectionHTML(sec, d){
   if(sec==="basic"){
     const i = insts[0] || {};
     return `<div class="card"><h2>⚙️ محرك QoS</h2>
-      <div class="row"><div><div class="name">الحالة الحية من الراوتر</div><div class="note">Enable=${esc(i.Enable)} — أي تغيير يكتب مباشرة على الجهاز</div></div>
+      <div class="row"><div><div class="name">الحالة الحية</div><div class="note">أي تغيير يكتب على الراوتر فوراً مع قراءة تأكيد</div></div>
       <label class="switch"><input type="checkbox" id="swBasic" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label></div>
-      <p class="note" style="margin-top:8px">💡 المحرك لازم يكون مُفعّل عشان قواعد حد التنزيل والتصنيف تشتغل.</p></div>`;
+      <p class="note" style="margin-top:10px">💡 لازم المحرك مُفعّل عشان قواعد حد التنزيل والتصنيف تشتغل.</p></div>`;
   }
   if(sec==="policing"){
     return `<div class="card"><h2>🚦 Traffic Policing</h2><table>
       <tr><th>الاسم</th><th>السرعة</th><th>البيرست</th><th>عند التجاوز</th><th>الحالة</th></tr>
-      ${insts.map(i=>`<tr><td>${esc(i.Alias)}</td><td>${i.CommittedRate} <span class="mono">(${fmtRate(i.CommittedRate)})</span></td>
-        <td class="mono">${i.CommittedBurstSize}</td><td>${esc(i.NonConformingAction)}</td><td>${badge(i.Enable==="1")}</td></tr>`).join("")}</table>
-      <p class="note" style="margin-top:12px">🔒 مقفولة من فيرموير التليكو (قراءة فقط).</p></div>`;
+      ${insts.map((p,x)=>`<tr style="animation-delay:${x*.06}s"><td><b>${esc(p.Alias)}</b></td>
+        <td>${p.CommittedRate} <span class="mono">(${fmtRate(p.CommittedRate)})</span></td>
+        <td class="mono">${p.CommittedBurstSize}</td><td>${esc(p.NonConformingAction)}</td><td>${badge(p.Enable==="1")}</td></tr>`).join("")}</table>
+      <p class="note" style="margin-top:12px">🔒 مقفولة من فيرموير التليكو — قراءة فقط (اكتشاف حقيقي من الفيرموير نفسه).</p></div>`;
   }
   if(sec==="classification"){
-    return `<div class="card"><h2>🏷️ قواعد التصنيف</h2>${insts.map(i=>`
-      <div class="row"><div style="flex:1"><div class="name">${esc(i.Alias)} ${badge(i.Enable==="1","مطبقة","موقوفة")}</div>
+    return `<div class="card"><h2>🏷️ قواعد التصنيف</h2>${insts.map((i,x)=>`
+      <div class="row" style="animation-delay:${x*.07}s"><div style="flex:1">
+        <div class="name">${esc(i.Alias)} ${badge(i.Enable==="1","مطبقة","موقوفة")}</div>
         <div class="mono">Order=${esc(i.Order)} · DevIn=${esc(i.DevIn)} · Policer=${esc(i.PolicerQueue||"—")}</div>
-        <div class="chips"><span class="chip" onclick="editQcModal('${esc(i._InstID)}')">✏️ تعديل السرعة</span></div></div>
+        <div class="chips"><span class="chip" onclick="editQcModal('${esc(i._InstID)}')">✏️ ربط بوليسر / ترتيب</span></div></div>
         <label class="switch"><input type="checkbox" class="qc-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label></div>`).join("") || '<div class="empty">لا قواعد</div>'}
-      <p class="note" style="margin-top:8px">القاعدة تصنّف الحركة (IP/MAC/منفذ/DSCP…) وتحولها لبوليسر يحدد سرعتها.</p></div>`;
+      <p class="note" style="margin-top:10px">القاعدة بتطابق حركة (IP/MAC/منفذ/DSCP…) وبتحوّلها لبوليسر يحدد سرعتها.</p></div>`;
   }
   return `<div class="card"><h2>${sec==="congestion"?"🚧 إدارة الازدحام":"🧬 Traffic Shaping"}</h2>
     <div class="empty">فاضي على الراوتر — لا عناصر مُهيَّأة.</div></div>`;
 }
 function wireBasic(){
-  const el = $("#swBasic");
-  el.onchange = async ()=>{
-    el.disabled = true;
-    const r = await jpost("/api/qos/basic",{action:"Apply",fields:{Enable:el.checked?"1":"0"}});
+  $("#swBasic").onchange = async el=>{
+    el.target.disabled = true;
+    const r = await jpost("/api/qos/basic",{action:"Apply",fields:{Enable:el.target.checked?"1":"0"}});
     toast(r.ok?"تم الحفظ ✅":"رفض الراوتر: "+r.error,!r.ok);
-    if(!r.ok) el.checked=!el.checked;
-    el.disabled=false;
+    if(!r.ok) el.target.checked=!el.target.checked;
+    el.target.disabled=false;
   };
 }
 function wireClass(){
   $$(".qc-toggle").forEach(el=>el.onchange = async ()=>{
     el.disabled = true;
     const r = await jpost("/api/qos/classification",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
-    toast(r.ok?"تم ✅":"رفض الراوتر: "+r.error,!r.ok);
+    toast(r.ok?"تم ✅":"رفض: "+r.error,!r.ok);
     if(!r.ok) el.checked=!el.checked;
     el.disabled=false;
   });
@@ -415,43 +488,39 @@ function wireClass(){
 function editQcModal(inst){
   const i = (qosCache.classification?.instances||[]).find(x=>x._InstID===inst);
   if(!i) return;
-  const pol = (qosCache.policing?.instances||[]);
   $("#modalTitle").textContent = "✏️ "+i.Alias;
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
-    <div><label>البوليسر المرتبط</label>
-      <select class="sel" id="qc_pol" style="width:100%">
-        <option value="">بدون</option>
-        ${pol.map(p=>`<option value="${esc(p._InstID)}" ${i.PolicerQueue===p._InstID?"selected":""}>${esc(p.Alias)} (${fmtRate(p.CommittedRate)})</option>`).join("")}
-      </select></div>
-    <div><label>ترتيب القاعدة (Order)</label><input class="txt" id="qc_order" type="number" min="1" max="32" value="${esc(i.Order)}" style="width:100%"></div>
-    <button class="btn" onclick="saveQc('${esc(inst)}')">حفظ على الراوتر</button>`;
+    <div><label>البوليسر المرتبط</label><select class="sel" id="qc_pol" style="width:100%">
+      <option value="">بدون</option>
+      ${((qosCache.policing?.instances)||[]).map(p=>`<option value="${esc(p._InstID)}" ${i.PolicerQueue===p._InstID?"selected":""}>${esc(p.Alias)} (${fmtRate(p.CommittedRate)})</option>`).join("")}
+    </select></div>
+    <div><label>ترتيب القاعدة</label><input class="txt" id="qc_order" type="number" min="1" max="32" value="${esc(i.Order)}" style="width:100%"></div>
+    <button class="btn" onclick="saveQc('${esc(inst)}')">💾 حفظ على الراوتر</button>`;
   $("#modal").classList.remove("hidden");
 }
 async function saveQc(inst){
   const i = qosCache.classification.instances.find(x=>x._InstID===inst);
   const r = await jpost("/api/qos/classification",{action:"Apply",instId:inst,fields:{
-    Order:$("#qc_order").value||"1", PolicerQueue:$("#qc_pol").value||"-1",
-    Alias:i.Alias, Enable:i.Enable}});
+    Order:$("#qc_order").value||"1", PolicerQueue:$("#qc_pol").value||"-1", Alias:i.Alias, Enable:i.Enable}});
   if(r.ok){ toast("تم الحفظ ✅"); closeModal(); renderQos("classification"); }
-  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
+  else { $("#modalErr").textContent="رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 function downlimitHTML(g, r){
   const gi = g.instances[0] || {};
   return `<div class="card"><h2>⬇️ حد التنزيل — العام</h2>
     <div class="row"><div><div class="name">الخاصية</div>
-      <div class="note">DownBandwidth=${esc(gi.DownBandwidth)} bps ${(+gi.DownBandwidth>0)?`(${fmtRate(+gi.DownBandwidth)})`:"— (بدون حد عام)"}</div></div>
+      <div class="note">${(+gi.DownBandwidth>0)?`حد ${fmtRate(+gi.DownBandwidth)} على كل الشبكة`:"بدون حد عام"}</div></div>
       <label class="switch"><input type="checkbox" id="sw_dl" ${gi.Enable==="1"?"checked":""}><span class="slider"></span></label></div></div>
     <div class="card"><h2>📲 حدود لكل جهاز</h2>${ r.instances.length ? `<table>
       <tr><th>الاسم</th><th>MAC</th><th>الحد</th><th>الحالة</th><th>تحكم</th></tr>
-      ${r.instances.map(i=>`<tr><td>${esc(i.Alias)}</td><td class="mono">${esc(i.DestMAC)}</td>
-        <td>${i.DownBandwidth} <span class="mono">(${fmtRate(+i.DownBandwidth)})</span></td>
+      ${r.instances.map((i,x)=>`<tr style="animation-delay:${x*.06}s"><td><b>${esc(i.Alias)}</b></td><td class="mono">${esc(i.DestMAC)}</td>
+        <td>${fmtRate(+i.DownBandwidth)} <span class="mono">(${i.DownBandwidth})</span></td>
         <td>${badge(i.Enable==="1")}</td>
         <td><label class="switch"><input type="checkbox" class="dl-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label>
           <button class="btn btn-sm red" style="margin-inline-start:8px" onclick="delRule('${esc(i._InstID)}')">🗑️</button></td></tr>`).join("")}
-      </table>` : '<div class="empty">لا قواعد — جرّب قوالب الأجهزة أو أضف يدوي</div>'}
-      <div style="margin-top:15px;display:flex;gap:9px;flex-wrap:wrap"><button class="btn" onclick="addRuleModal()">➕ إضافة حد لجهاز</button></div>
-      <p class="note" style="margin-top:10px">الحد بالـ bps (8192~100000000). القاعدة تشتغل على طول لما حد التنزيل العام مُفعّل + محرك QoS.</p></div>`;
+      </table>` : '<div class="empty">لا قواعد — استخدم قوالب الأجهزة أو أضف يدوي</div>'}
+      <div style="margin-top:16px"><button class="btn" onclick="addRuleModal()">➕ إضافة حد لجهاز</button></div></div>`;
 }
 function wireDownlimit(){
   const sw = $("#sw_dl");
@@ -459,14 +528,14 @@ function wireDownlimit(){
     sw.disabled=true;
     const gi = qosCache.downlimit_global?.instances?.[0] || {};
     const r = await jpost("/api/qos/downlimit_global",{action:"Apply",fields:{Enable:sw.checked?"1":"0",DownBandwidth:gi.DownBandwidth??"0"}});
-    toast(r.ok?"تم الحفظ ✅":"رفض الراوتر: "+r.error,!r.ok);
+    toast(r.ok?"تم ✅":"رفض: "+r.error,!r.ok);
     if(!r.ok) sw.checked=!sw.checked;
     sw.disabled=false;
   };
   $$(".dl-toggle").forEach(el=>el.onchange = async ()=>{
     el.disabled=true;
     const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
-    toast(r.ok?"تم ✅":"رفض الراوتر: "+r.error,!r.ok);
+    toast(r.ok?"تم ✅":"رفض: "+r.error,!r.ok);
     if(!r.ok) el.checked=!el.checked;
     el.disabled=false;
   });
@@ -474,19 +543,18 @@ function wireDownlimit(){
 async function delRule(inst){
   if(!confirm("حذف القاعدة؟")) return;
   await jpost("/api/qos/downlimit_rules",{action:"Delete",instId:inst});
-  toast("اتمسحت"); renderQos("downlimit");
+  toast("اتمسحت 🗑️"); renderQos("downlimit");
 }
 function addRuleModal(mac, name){
-  const devs = devicesCache || [];
   $("#modalTitle").textContent = "➕ حد تنزيل لجهاز";
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
     <div><label>اسم القاعدة</label><input class="txt" id="f_alias" style="width:100%" value="${esc(name||"حد جديد")}"></div>
     <div><label>الجهاز</label><select class="sel" id="f_dev" style="width:100%">
       <option value="">— MAC يدوي —</option>
-      ${devs.map(d=>`<option value="${esc(d.mac)}" ${mac===d.mac?"selected":""}>${esc(d.name)} · ${esc(d.ip)}</option>`).join("")}
+      ${devicesCache.map(d=>`<option value="${esc(d.mac)}" ${mac===d.mac?"selected":""}>${esc(d.name)} · ${esc(d.ip)}</option>`).join("")}
     </select></div>
-    <div><label>MAC</label><input class="txt" id="f_mac" style="width:100%" value="${esc(mac||"")}"></div>
+    <div><label>MAC</label><input class="txt" id="f_mac" style="width:100%" value="${esc(mac||"")}" placeholder="aa:bb:cc:dd:ee:ff"></div>
     <div><label>السرعة (Mbps)</label><input class="txt" id="f_bw" type="number" min="1" max="100" style="width:100%" value="5"></div>
     <button class="btn" onclick="saveNewRule()">إضافة</button>`;
   $("#modal").classList.remove("hidden");
@@ -496,124 +564,125 @@ async function saveNewRule(){
   const alias = $("#f_alias").value.trim()||"حد";
   const mac = $("#f_mac").value.trim().toLowerCase();
   const bps = String((+$("#f_bw").value||1)*1e6);
-  if(!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)){ $("#modalErr").textContent="MAC غير صحيح"; $("#modalErr").classList.remove("hidden"); return; }
+  if(!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)){ $("#modalErr").textContent="MAC غير صحيح (مثال aa:bb:cc:dd:ee:ff)"; $("#modalErr").classList.remove("hidden"); return; }
   const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:"-1",fields:{
     Alias:alias,Enable:"1",ManaType:"mac",DestMAC:mac,IPDest:"0.0.0.0",IPDestMask:"0.0.0.0",
     DestDevIF:"DEV.BRIDGING.BR1.BRPORT2",DownBandwidth:bps}});
-  if(r.ok){ toast("تمت الإضافة ✅"); closeModal();
-    $$(".subnav button").forEach(x=>x.classList.remove("active"));
-    $$(".subnav button")[2].classList.add("active"); renderQos("downlimit"); }
-  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
+  if(r.ok){ toast("تمت الإضافة ✅"); closeModal(); renderQos("downlimit"); }
+  else { $("#modalErr").textContent="رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 
-// ==================== DEVICES ====================
+/* ==================== DEVICES ==================== */
 async function loadDevices(){
-  const b = $("#devBody"); b.className="load"; b.textContent="جارٍ التحميل…";
+  const b = $("#devBody"); b.className="load"; b.textContent="جارٍ التحميل";
   try{
     const d = await jget("/api/devices");
     devicesCache = d.devices;
-    if(!d.devices.length){ b.className="empty"; b.textContent="لا أجهزة"; return; }
     b.className="";
+    if(!d.devices.length){ b.innerHTML = '<div class="empty">لا أجهزة</div>'; return; }
+    const icon = x => x.type==="wifi"?"📱":x.type==="lan"?"💻":"🔌";
     b.innerHTML = `<table><tr><th>الجهاز</th><th>IP</th><th>اتصال</th><th>الحالة</th><th>قوالب سرعة</th><th>تحكم</th></tr>
-      ${d.devices.map((x,ix)=>`<tr>
-        <td><div style="display:flex;gap:9px;align-items:center"><div class="avatar">${x.type==="wifi"?"📱":x.type==="lan"?"💻":"🔌"}</div>
-          <div><div class="name" style="font-weight:600">${esc(x.name)}</div>
+      ${d.devices.map((x,ix)=>`<tr style="animation-delay:${ix*.05}s">
+        <td><div style="display:flex;gap:10px;align-items:center"><div class="avatar">${icon(x)}</div>
+          <div><div class="name" style="font-weight:650">${esc(x.name)}</div>
           <div class="mono">${esc(x.mac)}${x.custom?" ✏️":""}</div></div></div></td>
         <td class="mono">${esc(x.ip)}</td>
         <td>${x.type==="wifi"?"📶 "+esc(x.ssid):x.type==="lan"?"🔌 كابل":"💾 USB"}</td>
         <td>${x.blocked?'<span class="badge ban">⛔ محظور</span>':badge(true,"متصل")}</td>
         <td><div class="chips">
-          <span class="chip" onclick="applyPreset('${esc(x.mac)}','gaming')">🎮 2M</span>
-          <span class="chip" onclick="applyPreset('${esc(x.mac)}','streaming')">🎬 15M</span>
-          <span class="chip" onclick="applyPreset('${esc(x.mac)}','homework')">📚 8M</span>
-          <span class="chip red" onclick="applyPreset('${esc(x.mac)}','free')">✖️ بدون</span></div></td>
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','gaming')" title="حد 2 ميجا للألعاب">🎮 2M</span>
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','streaming')" title="حد 15 ميجا للستريمنج">🎬 15M</span>
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','homework')" title="حد 8 ميجا للمذاكرة">📚 8M</span>
+          <span class="chip red" onclick="applyPreset('${esc(x.mac)}','free')">✖️ بدون حد</span></div></td>
         <td style="white-space:nowrap">
-          <button class="btn btn-sm" onclick="renameModal('${esc(x.mac)}','${esc(x.auto)}')">✏️</button>
-          <button class="btn btn-sm ${x.blocked?"":"red"}" onclick="toggleBlock('${esc(x.mac)}',${!x.blocked})">${x.blocked?"✅ فك":"⛔ حظر"}</button></td>
+          <button class="btn btn-sm" onclick="renameModal('${esc(x.mac)}','${esc(x.auto)}')" title="تسمية">✏️</button>
+          <button class="btn btn-sm ${x.blocked?"green":"red"}" onclick="toggleBlock('${esc(x.mac)}',${!x.blocked})" title="${x.blocked?"فك الحظر":"حظر"}">${x.blocked?"🔓 فك":"⛔ حظر"}</button></td>
       </tr>`).join("")}</table>`;
-  }catch(e){ b.textContent="خطأ: "+e.message; }
+  }catch(e){ b.className=""; b.textContent="خطأ: "+e.message; }
 }
 async function applyPreset(mac, preset){
   busy = true;
+  const names = {gaming:"🎮 2M",streaming:"🎬 15M",homework:"📚 8M",free:"✖️ بدون حد"};
   const r = await jpost("/api/devices/preset",{mac,preset});
   busy = false;
-  toast(r.ok? "تم التطبيق ✅ ("+(preset==="free"?"بدون حد":preset)+")":"فشل: "+(r.error||""), !r.ok);
-  if(r.ok) loadDevices();
+  toast(r.ok? "تم: "+names[preset]+" ✅":"فشل: "+(r.error||""), !r.ok);
+  if(r.ok){ loadDevices(); loadFeed(); }
 }
 function renameModal(mac, auto){
   $("#modalTitle").textContent = "✏️ تسمية الجهاز";
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
-    <div><label>اسم جديد (سيظهر في اللوحة فقط)</label><input class="txt" id="rn" style="width:100%" value="${esc(auto)}"></div>
-    <button class="btn" onclick="saveName('${esc(mac)}')">حفظ</button>`;
+    <div><label>اسم جديد (بيظهر في اللوحة)</label><input class="txt" id="rn" style="width:100%" value="${esc(auto)}" dir="auto"></div>
+    <button class="btn" onclick="saveName('${esc(mac)}')">💾 حفظ</button>`;
   $("#modal").classList.remove("hidden");
 }
 async function saveName(mac){
-  const name = $("#rn").value.trim();
-  const r = await jpost("/api/devices/name",{mac,name});
-  if(r.ok){ toast("اتحفظ ✅"); closeModal(); loadDevices(); }
+  const r = await jpost("/api/devices/name",{mac,name:$("#rn").value.trim()});
+  if(r.ok){ toast("اتحفظ ✏️✅"); closeModal(); loadDevices(); }
 }
 async function toggleBlock(mac, block){
-  if(block && !confirm("حظر "+mac+" من الواي فاي؟ الجهاز هيتقطع لحد ما تفك الحظر")) return;
+  if(block && !confirm("حظر "+mac+" من الواي فاي؟ هيتقطع لحد ما تفك")) return;
+  busy = true;
   const r = await jpost("/api/devices/block",{mac,block});
-  toast(r.ok? (block?"تم الحظر ⛔":"فك الحظر ✅") : "فشل: "+r.error, !r.ok);
-  if(r.ok) loadDevices();
+  busy = false;
+  toast(r.ok? (block?"تم الحظر ⛔":"فك الحظر 🔓✅") : "فشل: "+(r.error||""), !r.ok);
+  if(r.ok){ loadDevices(); loadSecurity(); loadFeed(); }
 }
 
-// ==================== WIFI ====================
+/* ==================== WIFI ==================== */
 async function loadWifi(){
-  const b = $("#wifiBody"); b.className="load"; b.textContent="جارٍ التحميل…";
+  const b = $("#wifiBody"); b.className="load"; b.textContent="جارٍ التحميل";
   try{
-    const d = await jget("/api/wifi"); wifiCache = d;
+    const d = await jget("/api/wifi"); wifiCache = d; b.className="";
     const r = d.radio||{}, cf = d.conf||{};
     let html = `<div class="row"><div><div class="name">الراديو</div>
-      <div class="note">RadioStatus=${esc(r.RadioStatus)} — إطفاءه يفصل كل الواي فاي</div></div>
+      <div class="note">إطفاءه يفصل كل أجهزة الواي فاي</div></div>
       <label class="switch"><input type="checkbox" id="swRadio" ${r.RadioStatus==="1"?"checked":""}><span class="slider"></span></label></div>
-      <div class="row"><div><div class="name">قناة البث (Channel)</div>
-      <div class="note">الحاليّة: ${cf.AutoChannelEnabled==="1"?"تلقائي":"قناة "+esc(cf.Channel)} · عرض ${esc(cf.BandWidth)}</div></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select class="sel" id="chSel"><option value="">تلقائي</option>${[1,2,3,4,5,6,7,8,9,10,11,12,13].map(c=>`<option>${c}</option>`).join("")}</select>
-        <button class="btn btn-sm" onclick="setChannel()">تطبيق</button></div></div>`;
-    html += `<h2 style="margin-top:18px">شبكات SSID</h2>`;
+      <div class="row"><div><div class="name">قناة البث</div>
+      <div class="note">الحالية: ${cf.AutoChannelEnabled==="1"?"تلقائي ⚡":"قناة "+esc(cf.Channel)} · عرض ${esc(cf.BandWidth)} · دولة ${esc(cf.CountryCode)}</div></div>
+      <div style="display:flex;gap:9px;align-items:center">
+        <select class="sel" id="chSel"><option value="">تلقائي</option>${[1,2,3,4,5,6,7,8,9,10,11,12,13].map(x=>`<option>${x}</option>`).join("")}</select>
+        <button class="btn btn-sm" onclick="setChannel()">تطبيق</button></div></div>
+      <h2 style="margin:20px 0 6px">شبكات SSID</h2>`;
     html += d.aps.map((a,ix)=>`
-      <div class="row"><div style="flex:1">
-        <div class="name">${esc(a.Alias)} — <b class="mono">${esc(a.ESSID)}</b> ${badge(a.Enable==="1")}
+      <div class="row" style="animation-delay:${ix*.06}s"><div style="flex:1">
+        <div class="name">${esc(a.Alias)} — <b class="mono" style="color:var(--tx)">${esc(a.ESSID)}</b> ${badge(a.Enable==="1")}
           ${a.ESSIDHideEnable==="1"?'<span class="badge off">مخفية 👻</span>':''}</div>
         <div class="mono">${esc(a._InstID)} · ${esc(a.BeaconType)}</div>
         <div class="chips">
           <span class="chip" onclick="editWifiModal('${esc(a._InstID)}')">✏️ إعدادات الشبكة</span>
           ${a.Enable==="1"?`<span class="chip" onclick="showPass('${esc(a._InstID)}',${ix})">🔑 الباسورد</span>`:""}
         </div>
-        <div class="mono" id="pass_${ix}" style="margin-top:7px;color:var(--ok)"></div>
+        <div class="mono" id="pass_${ix}" style="margin-top:8px;color:var(--ok);font-size:14px"></div>
       </div>
       <label class="switch"><input type="checkbox" class="ap-toggle" data-inst="${esc(a._InstID)}" ${a.Enable==="1"?"checked":""}><span class="slider"></span></label></div>`).join("");
-    b.className=""; b.innerHTML = html;
+    b.innerHTML = html;
     $("#swRadio").onchange = async el=>{
       if(!confirm("تشغيل/إطفاء كل الواي فاي؟")){ el.target.checked=!el.target.checked; return; }
       el.target.disabled=true;
       const rr = await jpost("/api/wifi/radio",{on:el.target.checked});
       toast(rr.ok?"تم ✅":"رفض: "+rr.error,!rr.ok);
-      el.target.disabled=false; loadWifi();
+      el.target.disabled=false; loadWifi(); loadFeed();
     };
     $$(".ap-toggle").forEach(el=>el.onchange=async()=>{
       el.disabled=true;
-      const ap = d.aps.find(a=>a._InstID===el.dataset.inst);
       const rr = await jpost("/api/wifi/save",{apId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
       toast(rr.ok?"تم ✅":"رفض: "+rr.error,!rr.ok);
       if(!rr.ok) el.checked=!el.checked;
       el.disabled=false; loadWifi();
     });
-  }catch(e){ b.textContent="خطأ: "+e.message; }
+  }catch(e){ b.className=""; b.textContent="خطأ: "+e.message; }
 }
 async function setChannel(){
   const v = $("#chSel").value;
   const r = await jpost("/api/wifi/channel",{channel:v||1,auto:!v});
-  toast(r.ok? (v?"تمضبط على قناة "+v:"رجع تلقائي ✅") : "رفض: "+r.error, !r.ok);
+  toast(r.ok? (v?"قناة "+v+" ✅":"تلقائي ✅") : "رفض: "+r.error, !r.ok);
   if(r.ok) loadWifi();
 }
 async function showPass(apId, ix){
-  const r = await jget("/api/wifi/password?ap="+apId);
   const el = $("#pass_"+ix);
+  el.textContent = "جارٍ القراءة…";
+  const r = await jget("/api/wifi/password?ap="+apId);
   el.textContent = r.ok ? "🔑 "+r.password : "خطأ: "+r.error;
 }
 function editWifiModal(apId){
@@ -624,14 +693,14 @@ function editWifiModal(apId){
   $("#modalBody").innerHTML = `
     <div><label>اسم الشبكة (SSID)</label><input class="txt" id="w_essid" style="width:100%" value="${esc(ap.ESSID)}"></div>
     <div class="frm-row">
-      <div><label>إخفاء</label><select class="sel" id="w_hide" style="width:100%">
+      <div><label>الإخفاء</label><select class="sel" id="w_hide" style="width:100%">
         <option value="0" ${ap.ESSIDHideEnable==="0"?"selected":""}>ظاهرة</option>
         <option value="1" ${ap.ESSIDHideEnable==="1"?"selected":""}>مخفية 👻</option></select></div>
       <div><label>الحالة</label><select class="sel" id="w_en" style="width:100%">
         <option value="1" ${ap.Enable==="1"?"selected":""}>شغالة</option>
         <option value="0" ${ap.Enable==="0"?"selected":""}>واقفة</option></select></div></div>
-    <div><label>باسورد جديد (اتركه فاضي = بدون تغيير — 8 حروف على الأقل)</label>
-      <input class="txt" id="w_pass" type="text" style="width:100%" placeholder="••••••••"></div>
+    <div><label>باسورد جديد (فاضي = بدون تغيير — 8 حروف +)</label>
+      <input class="txt" id="w_pass" style="width:100%" placeholder="••••••••"></div>
     <button class="btn" onclick="saveWifi('${esc(apId)}')">💾 حفظ على الراوتر</button>`;
   $("#modal").classList.remove("hidden");
 }
@@ -640,71 +709,107 @@ async function saveWifi(apId){
   const pw = $("#w_pass").value;
   if(pw){ if(pw.length<8){ $("#modalErr").textContent="الباسورد لازم 8 حروف على الأقل"; $("#modalErr").classList.remove("hidden"); return;} fields.KeyPassphrase=pw; }
   const r = await jpost("/api/wifi/save",{apId,fields});
-  if(r.ok){ toast("تم الحفظ على الراوتر ✅"); closeModal(); loadWifi(); }
-  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
+  if(r.ok){ toast("تم الحفظ على الراوتر ✅"); closeModal(); loadWifi(); loadFeed(); }
+  else { $("#modalErr").textContent="رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 
-// ==================== LAN ====================
+/* ==================== LAN ==================== */
 async function loadLan(){
   try{
-    const [ls, dh] = await Promise.all([jget("/api/lanstatus"), jget("/api/dhcpleases")]);
+    const [ls, dh, st] = await Promise.all([jget("/api/lanstatus"), jget("/api/dhcpleases"), jget("/api/qos/dhcp_static")]);
     $("#lanBody").className="";
     $("#lanBody").innerHTML = "<table><tr><th>المنفذ</th><th>الحالة</th><th>السرعة</th><th>استقبل</th><th>أرسل</th></tr>" +
-      ls.ports.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.status==="Up"?'<span class="badge on">موصل 🔗</span>':'<span class="badge off">فاضي</span>'}</td>
+      ls.ports.map((p,x)=>`<tr style="animation-delay:${x*.05}s"><td><b>${esc(p.name)}</b></td>
+        <td>${p.status==="Up"?'<span class="badge on">موصل 🔗</span>':'<span class="badge off">فاضي</span>'}</td>
         <td class="mono">${p.speed} Mbps ${esc(p.duplex)}</td><td class="mono">${fmtRate(+p.rx*8)}</td><td class="mono">${fmtRate(+p.tx*8)}</td></tr>`).join("")+"</table>";
     $("#dhcpBody").className="";
     $("#dhcpBody").innerHTML = dh.leases.length ? `<table><tr><th>الجهاز</th><th>IP</th><th>MAC</th><th>منفذ</th></tr>` +
-      dh.leases.map(l=>`<tr><td>${esc(l.host)}</td><td class="mono">${esc(l.ip)}</td><td class="mono">${esc(l.mac)}</td><td>${esc(l.port)}</td></tr>`).join("")+"</table>"
-      : '<div class="empty">لا عقود</div>';
+      dh.leases.map((l,x)=>`<tr style="animation-delay:${x*.04}s"><td>${esc(l.host)}</td><td class="mono">${esc(l.ip)}</td>
+        <td class="mono">${esc(l.mac)}</td><td>${esc(l.port)}</td></tr>`).join("")+"</table>" : '<div class="empty">لا عقود</div>';
+    $("#staticBody").className="";
+    $("#staticBody").innerHTML = (st.instances.length
+      ? `<table><tr><th>الاسم</th><th>IP الثابت</th><th>MAC</th><th></th></tr>` +
+        st.instances.map(r=>`<tr><td><b>${esc(r.Name)}</b></td><td class="mono">${esc(r.IPAddr)}</td><td class="mono">${esc(r.MACAddr)}</td>
+          <td><button class="btn btn-sm red" onclick="delStatic('${esc(r._InstID)}')">🗑️</button></td></tr>`).join("") +
+        `</table>`
+      : '<div class="empty">لا حجوزات ثابتة</div>') +
+      `<div style="margin-top:15px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:9px" class="st-form">
+        <input class="txt" id="st_name" placeholder="اسم" style="width:100%">
+        <input class="txt" id="st_mac" placeholder="MAC" style="width:100%">
+        <input class="txt" id="st_ip" placeholder="192.168.1.100" style="width:100%">
+        <button class="btn btn-sm" onclick="addStatic()">📌 حجز</button></div>`;
   }catch(e){ $("#lanBody").textContent="خطأ: "+e.message; }
 }
+async function addStatic(){
+  const name = $("#st_name").value.trim(), mac = $("#st_mac").value.trim().toLowerCase(), ip = $("#st_ip").value.trim();
+  if(!name||!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)||!ip){ toast("كمل الاسم وMAC صحيح والـ IP",true); return; }
+  const r = await jpost("/api/qos/dhcp_static",{action:"Apply",instId:"-1",fields:{Name:name,MACAddr:mac,IPAddr:ip}});
+  toast(r.ok?"تم الحجز 📌✅":"رفض: "+r.error,!r.ok);
+  if(r.ok) loadLan();
+}
+async function delStatic(inst){
+  if(!confirm("فك الحجز الثابت؟")) return;
+  await jpost("/api/qos/dhcp_static",{action:"Delete",instId:inst});
+  toast("اتشال"); loadLan();
+}
 
-// ==================== SECURITY ====================
+/* ==================== SECURITY ==================== */
 async function loadSecurity(){
   try{
     const fw = await jget("/api/qos/firewall");
     const i = fw.instances[0] || {};
     const lvls = {Low:"منخفض 🟢",Middle:"متوسط 🟡",High:"عالي 🔴"};
     $("#fwBody").className="";
-    $("#fwBody").innerHTML = `<div class="row"><div><div class="name">المستوى الحالي</div>
-      <div class="note">AntiAttack: ${i.AntiAttack==="1"?"مُفعّل 🛡️":"متوقف"}</div></div>
-      <div style="display:flex;gap:8px;align-items:center">
+    $("#fwBody").innerHTML = `<div class="row"><div><div class="name">المستوى الحالي: <b>${esc(lvls[i.Level]||i.Level)}</b></div>
+      <div class="note">Anti-Attack: ${i.AntiAttack==="1"?"مُفعّل 🛡️":"متوقف"}</div></div>
+      <div style="display:flex;gap:9px;align-items:center">
         <select class="sel" id="fwLevel">${Object.entries(lvls).map(([k,v])=>`<option value="${k}" ${i.Level===k?"selected":""}>${v}</option>`).join("")}</select>
         <button class="btn btn-sm" onclick="setFw()">تطبيق</button></div></div>`;
-    const uf = await jget("/api/qos/urlfilter");
-    const ug = await jget("/api/qos/urlfilter_global");
+    const [uf, ug] = await Promise.all([jget("/api/qos/urlfilter"), jget("/api/qos/urlfilter_global")]);
     const on = ug.instances[0]?.UrlFilterEnable==="1";
     $("#urlBody").className="";
     $("#urlBody").innerHTML = `<div class="row"><div><div class="name">تفعيل فلتر المواقع</div>
-      <div class="note">${uf.instances.length} قاعدة محفوظة</div></div>
+      <div class="note">${uf.instances.length} موقع محجوب</div></div>
       <label class="switch"><input type="checkbox" id="swUF" ${on?"checked":""}><span class="slider"></span></label></div>
-      ${uf.instances.length?`<table style="margin-top:8px"><tr><th>الموقع</th><th></th></tr>${uf.instances.map(u=>`<tr><td class="mono">${esc(u.Url||u.Alias||u.Name)}</td>
-        <td style="text-align:left"><button class="btn btn-sm red" onclick="delUrl('${esc(u._InstID)}')">🗑️</button></td></tr>`).join("")}</table>`:'<div class="empty">لا مواقع محجوبة</div>'}
-      <div style="margin-top:13px;display:flex;gap:8px"><input class="txt" id="urlNew" placeholder="example.com" style="flex:1;max-width:260px">
-      <button class="btn btn-sm" onclick="addUrl()">➕ حجب</button></div>`;
+      <div id="urlList">${uf.instances.length?`<table style="margin-top:10px"><tr><th>الموقع</th><th></th></tr>${uf.instances.map(u=>`<tr>
+        <td class="mono">${esc(u.Url)}</td><td style="text-align:left"><button class="btn btn-sm red" onclick="delUrl('${esc(u._InstID)}')">🗑️</button></td></tr>`).join("")}</table>`:'<div class="empty" style="margin-top:10px">لا مواقع محجوبة</div>'}</div>
+      <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap"><input class="txt" id="urlNew" placeholder="مثال: example.com" style="flex:1;min-width:180px">
+      <button class="btn btn-sm" onclick="addUrl()">➕ حجب الموقع</button></div>`;
     $("#swUF").onchange = async el=>{
       const r = await jpost("/api/qos/urlfilter_global",{action:"Apply",fields:{UrlFilterEnable:el.target.checked?"1":"0",UrlFilterTarget:"0"}});
       toast(r.ok?(el.target.checked?"الفلتر شغال 🚫":"الفلتر متوقف"):"رفض: "+r.error,!r.ok);
       if(!r.ok) el.target.checked=!el.target.checked;
     };
+    const [mf, mp] = await Promise.all([jget("/api/qos/macfilter"), jget("/api/qos/macfilter_policy")]);
+    const pol = mp.instances[0]?.ACLPolicy;
+    $("#banBody").className="";
+    $("#banBody").innerHTML = `<div class="row"><div><div class="name">وضع الوصول</div>
+      <div class="note">${pol==="Ban"?"قائمة سوداء — المحظورين تحت ما يقفلوا":pol==="Allow"?"قائمة بيضاء — المسموحين فقط يفصلوا":"معطّل — الكل متصل"}</div></div>
+      ${badge(mf.instances.length>0 && pol==="Ban", mf.instances.length+" محظور", "قائمة فاضية")}</div>
+      ${mf.instances.length?`<table style="margin-top:10px"><tr><th>MAC المحظور</th><th>اسم معروف</th><th></th></tr>${mf.instances.map(r=>{
+        const known = devicesCache.find(x=>x.mac===r.MACAddress);
+        return `<tr><td class="mono">${esc(r.MACAddress)}</td><td>${known?esc(known.name):"—"}</td>
+        <td><button class="btn btn-sm green" onclick="toggleBlock('${esc(r.MACAddress)}',false)">🔓 فك الحظر</button></td></tr>`;}).join("")}</table>`
+        :'<div class="empty" style="margin-top:10px">مفيش جهاز محظور دلوقتي 🎉</div>'}`;
   }catch(e){ $("#fwBody").textContent="خطأ: "+e.message; }
 }
 async function setFw(){
   const r = await jpost("/api/qos/firewall",{action:"Apply",fields:{Level:$("#fwLevel").value,AntiAttack:"1"}});
-  toast(r.ok?"مستوى الحماية اتغير ✅":"رفض: "+r.error,!r.ok); loadSecurity();
+  toast(r.ok?"مستوى الحماية اتغير ✅":"رفض: "+r.error,!r.ok); loadSecurity(); loadFeed();
 }
 async function addUrl(){
   const url = $("#urlNew").value.trim();
   if(!url) return;
   const r = await jpost("/api/qos/urlfilter",{action:"Apply",instId:"-1",fields:{Name:"blocked",Url:url}});
-  if(r.ok){ toast("اتحجب "+url+" ✅"); loadSecurity(); } else toast("رفض: "+r.error,true);
+  toast(r.ok?"اتحجب "+url+" 🚫✅":"رفض: "+(r.error||""),!r.ok);
+  if(r.ok){ loadSecurity(); loadFeed(); }
 }
 async function delUrl(inst){
   await jpost("/api/qos/urlfilter",{action:"Delete",instId:inst});
-  toast("اشالتلها"); loadSecurity();
+  toast("اتشال"); loadSecurity();
 }
 
-// ==================== SYSTEM ====================
+/* ==================== SYSTEM ==================== */
 async function loadSystem(){
   try{
     const info = await jget("/api/info");
@@ -713,14 +818,14 @@ async function loadSystem(){
       ["السيريال","SerialNumber"],["تاريخ البناء","VerDate"],["البت لودر","BootVer"]];
     $("#sysInfo").className="";
     $("#sysInfo").innerHTML = rows.map(([ar,k])=> i[k]?`<div class="row"><div class="name">${ar}</div>
-      <div class="mono">${esc(String(i[k]).replace(/&#32;/g," "))}</div></div>`:"").join("");
+      <div class="mono" style="font-size:13px;color:var(--tx)">${esc(String(i[k]).replace(/&#32;/g," "))}</div></div>`:"").join("");
     $("#bakBody").className="";
-    $("#bakBody").innerHTML = `<div class="row"><div><div class="name">نسخة احتياطية</div>
-      <div class="note">تصدير كل الإعدادات (QoS، الحدود، الحجب، الأسماء) كملف</div></div>
+    $("#bakBody").innerHTML = `<div class="row"><div><div class="name">تصدير نسخة كاملة</div>
+      <div class="note">QoS + حدود + حجب + أسماء الأجهزة → ملف JSON</div></div>
       <button class="btn btn-sm" onclick="doBackup()">💾 تنزيل</button></div>
       <div class="row"><div><div class="name">إرجاع من نسخة</div>
-      <div class="note">يضيف القواعد الناقصة بس (من غير لمس اللي شغال)</div></div>
-      <label class="btn btn-sm ghost" style="display:inline-flex;align-items:center">📂 اختر ملف
+      <div class="note">بيرجع العناصر الناقصة فقط من غير ما يلمس الشغال</div></div>
+      <label class="btn btn-sm ghost" style="display:inline-flex;align-items:center">📂 ملف JSON
         <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="doRestore(this)"></label></div>`;
   }catch(e){ $("#sysInfo").textContent="خطأ: "+e.message; }
 }
@@ -731,38 +836,46 @@ async function doBackup(){
   a.href = URL.createObjectURL(blob);
   a.download = "router-backup-"+new Date().toISOString().slice(0,10)+".json";
   a.click();
-  toast("النسخة اتنزلت ✅");
+  toast("النسخة اتنزلت 💾✅");
 }
 async function doRestore(inp){
   const file = inp.files[0]; if(!file) return;
-  const backup = JSON.parse(await file.text());
-  const prev = await jpost("/api/restore",{backup,apply:false});
-  if(!confirm("هنرجاع "+prev.plan.length+" عنصر ناقص. أكمل؟")) return;
-  const r = await jpost("/api/restore",{backup,apply:true});
-  toast("اترجع "+(r.restored||0)+" من "+(r.planned||0)+" ✅");
+  try{
+    const backup = JSON.parse(await file.text());
+    const prev = await jpost("/api/restore",{backup,apply:false});
+    if(!prev.plan.length){ toast("مفيش عناصر ناقصة — كل حاجة موجودة 👌"); return; }
+    if(!confirm("هنرجاع "+prev.plan.length+" عنصر. أكمل؟")) return;
+    const r = await jpost("/api/restore",{backup,apply:true});
+    toast("اترجع "+(r.restored||0)+" من "+(r.planned||0)+" ✅"); loadFeed();
+  }catch(e){ toast("ملف غير صالح: "+e.message,true); }
 }
 function askReboot(){
-  if(confirm("الراوتر هيقلب دلوقتي — النت هيقطع ~٥ دقايق. متأكد؟"))
-    jpost("/api/system/reboot").then(r=>toast(r.ok?"الراوتر بيقلب… 🔄":"خطأ: "+r.error,!r.ok));
+  if(confirm("الراوتر هيعمل ريستارت — النت هيقطع ~٥ دقايق. متأكد؟"))
+    jpost("/api/system/reboot").then(r=>{ toast(r.ok?"الراوتر بيقلب… 🔄":"خطأ: "+r.error,!r.ok); if(r.ok) loadFeed(); });
 }
 function askReset(){
-  if(!confirm("⚠️ خطر: كل الإعدادات هتمسح. يعمل نسخة احتياطية الأول؟")) return;
-  if(confirm("متأكد فعلاً؟ Reset من المصنع!"))
+  if(!confirm("⚠️ كل الإعدادات هتمسح. خدت نسخة احتياطية؟")) return;
+  if(confirm("متأكد فعلاً؟ ده Factory Reset!"))
     jpost("/api/system/factory-reset").then(r=>toast(r.ok?"باعود للمصنع…":"خطأ: "+r.error,!r.ok));
 }
 
-// ==================== MODAL / NAV ====================
+/* ==================== MODAL / NAV ==================== */
 function closeModal(){ $("#modal").classList.add("hidden"); }
 $("#modal").onclick = e=>{ if(e.target.id==="modal") closeModal(); };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+const LOADERS = {dash:()=>{loadDash();loadFeed();},
+  qos:()=>renderQos($$(".subnav button").find(b=>b.classList.contains("active")).dataset.q),
+  devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, system:loadSystem};
 function showView(name){
   $$("nav button").forEach(x=>x.classList.toggle("active", x.dataset.view===name));
   ["dash","qos","devices","wifi","lan","security","system"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==name));
-  ({dash:()=>{loadDash();loadFeed();}, qos:()=>renderQos($$(".subnav button").find(b=>b.classList.contains("active")).dataset.q),
-   devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, system:loadSystem}[name])?.();
+  const s = $("#view-"+name);
+  s.style.animation="none"; s.offsetHeight; s.style.animation="fadeIn .35s";
+  LOADERS[name]?.();
 }
 $$("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 
-// ==================== BOOT LOOP ====================
+/* ==================== INIT ==================== */
 (async function init(){
   const ok = await boot();
   if(ok){ loadDash(); loadFeed(); loadDevices(); }
@@ -770,10 +883,13 @@ $$("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
   setInterval(async ()=>{
     if(busy) return;
     const s = await jget("/api/status").catch(()=>({ok:false}));
-    if(!s.ok) boot();
+    if(!s.ok) boot().then(o=>{ if(o) { loadDash(); } });
   }, 20000);
-  setInterval(()=>{ const v=$$("nav button").find(b=>b.classList.contains("active"))?.dataset.view;
-    if(v==="dash"){loadDash();} if(v==="devices") loadDevices(); }, 30000);
+  setInterval(()=>{
+    const v = $$("nav button").find(b=>b.classList.contains("active"))?.dataset.view;
+    if(v==="dash") loadDash();
+    if(v==="devices") loadDevices();
+  }, 30000);
 })();
 </script>
 </body>
