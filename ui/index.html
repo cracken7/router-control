@@ -6,97 +6,124 @@
 <title>لوحة تحكم الراوتر — ZTE H168N</title>
 <style>
 :root{
-  --bg:#0b0f1a; --card:rgba(255,255,255,.055); --card2:rgba(255,255,255,.09);
-  --line:rgba(255,255,255,.10); --tx:#e8ecf4; --mut:#93a0b4;
-  --acc:#4cc9f0; --ok:#2ee6a8; --bad:#ff5d73; --warn:#ffc857;
+  --bg:#070b14; --panel:rgba(255,255,255,.05); --panel2:rgba(255,255,255,.085);
+  --line:rgba(255,255,255,.09); --tx:#eaf0f8; --mut:#8fa0b6;
+  --acc:#4cc9f0; --acc2:#9d4edd; --ok:#2ee6a8; --bad:#ff5d73; --warn:#ffc857;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html{scrollbar-color:#334 rgba(0,0,0,.2)}
 body{
   font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;
   background-image:
-    radial-gradient(900px 500px at 85% -10%, rgba(76,201,240,.14), transparent 60%),
-    radial-gradient(700px 420px at -10% 30%, rgba(157,78,221,.13), transparent 60%),
-    radial-gradient(600px 400px at 50% 110%, rgba(46,230,168,.08), transparent 60%);
-  background-attachment:fixed;
+    radial-gradient(1000px 540px at 88% -12%, rgba(76,201,240,.16), transparent 62%),
+    radial-gradient(760px 460px at -8% 28%, rgba(157,78,221,.15), transparent 62%),
+    radial-gradient(640px 420px at 52% 112%, rgba(46,230,168,.09), transparent 62%);
+  background-attachment:fixed;overflow-x:hidden;
 }
-.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 70px}
-header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:23px;
-  background:linear-gradient(135deg,rgba(76,201,240,.25),rgba(157,78,221,.25));border:1px solid var(--line)}
-h1{font-size:19px;font-weight:700;
-  background:linear-gradient(90deg,#4cc9f0,#9d4edd,#2ee6a8);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sub{color:var(--mut);font-size:12px;margin-top:2px}
-.status-pill{margin-inline-start:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);
-  background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:99px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 8px var(--bad)}
-.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
-nav{display:flex;gap:9px;margin:16px 0 20px;flex-wrap:wrap}
-nav button{background:var(--card);border:1px solid var(--line);color:var(--mut);padding:9px 18px;
-  border-radius:12px;cursor:pointer;font-size:13.5px;font-family:inherit;transition:.18s}
-nav button:hover{color:var(--tx);border-color:rgba(255,255,255,.22)}
-nav button.active{background:linear-gradient(135deg,rgba(76,201,240,.22),rgba(157,78,221,.22));
-  color:var(--tx);border-color:rgba(76,201,240,.45)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;
-  backdrop-filter:blur(14px)}
-.card h2{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:13px}
-.stat{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.stat .v{font-size:21px;font-weight:700;margin-top:5px}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 18px 90px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:18px;animation:rise .5s ease}
+.logo{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-size:25px;position:relative;
+  background:linear-gradient(135deg,rgba(76,201,240,.3),rgba(157,78,221,.3));border:1px solid var(--line)}
+.logo::after{content:"";position:absolute;inset:-4px;border-radius:20px;background:
+  linear-gradient(135deg,rgba(76,201,240,.25),transparent 60%);filter:blur(10px);z-index:-1;animation:pulse 3s infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+h1{font-size:20px;font-weight:800;background:linear-gradient(90deg,#4cc9f0,#c77dff,#2ee6a8);
+  background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:200%}}
+.sub{color:var(--mut);font-size:12px;margin-top:3px}
+.status-pill{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);
+  background:var(--panel);border:1px solid var(--line);padding:8px 15px;border-radius:99px;backdrop-filter:blur(10px)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 9px var(--bad);transition:.3s}
+.dot.on{background:var(--ok);box-shadow:0 0 9px var(--ok)}
+nav{display:flex;gap:9px;margin:18px 0 22px;flex-wrap:wrap;animation:rise .5s .05s both}
+nav button{background:var(--panel);border:1px solid var(--line);color:var(--mut);padding:10px 19px;
+  border-radius:13px;cursor:pointer;font-size:13.5px;font-family:inherit;transition:.2s;backdrop-filter:blur(8px)}
+nav button:hover{color:var(--tx);border-color:rgba(255,255,255,.25);transform:translateY(-1px)}
+nav button.active{background:linear-gradient(135deg,rgba(76,201,240,.24),rgba(157,78,221,.24));
+  color:#fff;border-color:rgba(76,201,240,.5);box-shadow:0 4px 24px rgba(76,201,240,.15)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:19px;margin-bottom:16px;
+  backdrop-filter:blur(16px);animation:rise .45s both}
+.card h2{font-size:15.5px;margin-bottom:15px;display:flex;align-items:center;gap:9px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:13px;animation:rise .5s .1s both}
+.stat{background:linear-gradient(160deg,var(--panel2),transparent 70%);border:1px solid var(--line);
+  border-radius:16px;padding:15px 17px;transition:.25s}
+.stat:hover{border-color:rgba(76,201,240,.4);transform:translateY(-2px)}
+.stat .v{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:.2px}
 .stat .l{color:var(--mut);font-size:12px}
-.stat .s{color:var(--mut);font-size:11px;margin-top:3px;direction:ltr;text-align:right}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;border-bottom:1px dashed var(--line)}
+.stat .s{color:var(--mut);font-size:11px;margin-top:4px;direction:ltr;text-align:right;opacity:.8}
+.netbars{display:flex;gap:4px;align-items:flex-end;height:34px;margin-top:8px}
+.netbars i{flex:1;background:linear-gradient(180deg,var(--acc),var(--acc2));border-radius:3px 3px 0 0;
+  min-height:2px;opacity:.85;transition:height .4s}
+.row{display:flex;align-items:center;justify-content:space-between;gap:13px;padding:12px 3px;border-bottom:1px dashed var(--line)}
 .row:last-child{border-bottom:none}
 .row .name{font-size:13.5px}
 .row .meta{color:var(--mut);font-size:11.5px;margin-top:3px;direction:ltr;text-align:left;word-break:break-all}
 .note{color:var(--mut);font-size:12px;line-height:1.9}
 .switch{position:relative;width:46px;height:25px;flex:none}
 .switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;background:rgba(255,255,255,.14);border-radius:99px;cursor:pointer;transition:.2s}
-.slider:before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;inset-inline-start:3px;transition:.2s}
-.switch input:checked + .slider{background:linear-gradient(135deg,#2ee6a8,#4cc9f0)}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:99px;cursor:pointer;transition:.22s}
+.slider:before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;inset-inline-start:3px;transition:.22s}
+.switch input:checked + .slider{background:linear-gradient(135deg,var(--ok),var(--acc))}
 .switch input:checked + .slider:before{transform:translateX(-21px)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{color:var(--mut);font-weight:600;text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+th{color:var(--mut);font-weight:600;text-align:right;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
 tr:hover td{background:rgba(255,255,255,.03)}
-.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;border:1px solid var(--line)}
+.badge{display:inline-block;padding:3px 11px;border-radius:99px;font-size:11px;border:1px solid var(--line);white-space:nowrap}
 .badge.on{color:var(--ok);border-color:rgba(46,230,168,.4);background:rgba(46,230,168,.08)}
 .badge.off{color:var(--mut)}
+.badge.ban{color:var(--bad);border-color:rgba(255,93,115,.45);background:rgba(255,93,115,.09)}
+.badge.warn{color:var(--warn);border-color:rgba(255,200,87,.4);background:rgba(255,200,87,.08)}
 .mono{direction:ltr;font-family:Consolas,monospace;font-size:11.5px;color:var(--mut)}
-.btn{background:linear-gradient(135deg,#4cc9f0,#9d4edd);border:none;color:#fff;padding:8px 16px;
-  border-radius:10px;cursor:pointer;font-family:inherit;font-size:12.5px}
-.btn.red{background:linear-gradient(135deg,#ff5d73,#c9184a)}
-.btn:disabled{opacity:.45;cursor:wait}
-.btn-sm{padding:5px 12px;font-size:11.5px}
-.subnav{display:flex;gap:7px;margin-bottom:15px;flex-wrap:wrap}
-.subnav button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:6px 14px;
-  border-radius:9px;cursor:pointer;font-size:12px;font-family:inherit}
-.subnav button.active{color:var(--acc);border-color:rgba(76,201,240,.45)}
+.btn{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff;padding:9px 17px;
+  border-radius:11px;cursor:pointer;font-family:inherit;font-size:12.5px;transition:.2s}
+.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn.red{background:linear-gradient(135deg,var(--bad),#c9184a)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mut)}
+.btn.ghost:hover{color:var(--tx);border-color:rgba(255,255,255,.3)}
+.btn:disabled{opacity:.45;cursor:wait;transform:none}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:9px}
+.subnav{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap}
+.subnav button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 15px;
+  border-radius:10px;cursor:pointer;font-size:12px;font-family:inherit;transition:.2s}
+.subnav button.active{color:var(--acc);border-color:rgba(76,201,240,.45);background:rgba(76,201,240,.07)}
 .hidden{display:none !important}
-.load{text-align:center;color:var(--mut);padding:26px;font-size:13px}
-.empty{color:var(--mut);font-size:13px;padding:16px;text-align:center}
-input.txt{background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--tx);border-radius:8px;
-  padding:7px 11px;font-family:inherit;font-size:13px;direction:ltr;text-align:left}
-input.txt:focus{outline:none;border-color:var(--acc)}
-select.sel{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx);border-radius:8px;
-  padding:7px 10px;font-family:inherit;font-size:13px}
-.modal{position:fixed;inset:0;background:rgba(5,8,15,.72);backdrop-filter:blur(6px);z-index:50;
-  display:grid;place-items:center}
-.modal-box{background:#131a2a;border:1px solid var(--line);border-radius:18px;padding:24px;width:min(430px,92vw)}
-.modal-box h3{font-size:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.modal-box h3 .x{cursor:pointer;color:var(--mut);font-size:18px}
-.frm{display:flex;flex-direction:column;gap:12px}
-.frm label{font-size:12px;color:var(--mut);display:block;margin-bottom:5px}
+.load{text-align:center;color:var(--mut);padding:28px;font-size:13px}
+.empty{color:var(--mut);font-size:13px;padding:18px;text-align:center}
+input.txt{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--tx);border-radius:9px;
+  padding:8px 12px;font-family:inherit;font-size:13px;direction:ltr;text-align:left}
+input.txt:focus,select.sel:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(76,201,240,.12)}
+select.sel{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx);border-radius:9px;padding:8px 10px;font-family:inherit;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(4,7,13,.75);backdrop-filter:blur(8px);z-index:50;display:grid;place-items:center;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal-box{background:#111827;border:1px solid rgba(255,255,255,.13);border-radius:20px;padding:26px;width:min(460px,92vw);
+  box-shadow:0 30px 90px rgba(0,0,0,.6);animation:rise .25s}
+.modal-box h3{font-size:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.modal-box h3 .x{cursor:pointer;color:var(--mut);font-size:19px}
+.frm{display:flex;flex-direction:column;gap:13px}
+.frm label{font-size:12px;color:var(--mut);display:block;margin-bottom:6px}
 .frm .frm-row{display:flex;gap:10px}
 .frm .frm-row>div{flex:1}
-.err{color:#ffb3bd;font-size:12px;margin-top:10px}
-.toast{position:fixed;bottom:22px;inset-inline-start:50%;transform:translateX(50%);background:var(--card2);
-  border:1px solid var(--line);backdrop-filter:blur(12px);padding:11px 22px;border-radius:13px;font-size:13px;
-  opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:90vw}
-.toast.show{opacity:1}
-.toast.err{border-color:rgba(255,93,115,.5);color:#ffb3bd}
-.eye{cursor:pointer;user-select:none;font-size:13px;margin-inline-start:6px}
-.danger-zone{border-color:rgba(255,93,115,.35)}
+.err{color:#ffb3bd;font-size:12px;margin-top:11px}
+.toast{position:fixed;bottom:24px;inset-inline-start:50%;transform:translateX(50%);background:#141c2e;
+  border:1px solid var(--line);padding:12px 24px;border-radius:14px;font-size:13px;opacity:0;
+  pointer-events:none;transition:.28s;z-index:99;max-width:92vw;box-shadow:0 14px 44px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(50%) translateY(-4px)}
+.toast.err{border-color:rgba(255,93,115,.55);color:#ffb3bd}
+.danger-zone{border-color:rgba(255,93,115,.32)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.chip{background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:#9be0f7;font-size:10.5px;
+  padding:3px 10px;border-radius:99px;cursor:pointer;transition:.15s}
+.chip:hover{background:rgba(76,201,240,.22)}
+.chip.red{background:rgba(255,93,115,.1);border-color:rgba(255,93,115,.35);color:#ffb3bd}
+.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;flex:none;
+  background:linear-gradient(135deg,rgba(76,201,240,.2),rgba(157,78,221,.2));border:1px solid var(--line)}
+.feed{max-height:190px;overflow:auto}
+.feed .frow{display:flex;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--line);font-size:12px;color:var(--mut)}
+.feed .frow b{color:var(--tx);font-weight:600}
+canvas{display:block;width:100%;height:110px}
+@media(max-width:640px){.wrap{padding:14px 9px 70px}}
 </style>
 </head>
 <body>
@@ -111,34 +138,36 @@ select.sel{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx
   </header>
 
   <nav>
-    <button data-view="dash" class="active">الرئيسية</button>
-    <button data-view="qos">تحكم QoS</button>
-    <button data-view="devices">الأجهزة</button>
-    <button data-view="wifi">الواي فاي</button>
-    <button data-view="lan">LAN / DHCP</button>
-    <button data-view="security">الحماية</button>
-    <button data-view="system">النظام</button>
+    <button data-view="dash" class="active">🏠 الرئيسية</button>
+    <button data-view="qos">⚖️ QoS</button>
+    <button data-view="devices">👥 الأجهزة</button>
+    <button data-view="wifi">📶 الواي فاي</button>
+    <button data-view="lan">🔌 LAN / DHCP</button>
+    <button data-view="security">🛡️ الحماية</button>
+    <button data-view="system">⚙️ النظام</button>
   </nav>
 
-  <!-- DASHBOARD -->
+  <!-- DASH -->
   <section id="view-dash">
     <div class="grid">
-      <div class="stat"><div class="l">حالة الإنترنت</div><div class="v" id="stWan">—</div><div class="s" id="stWanS"></div></div>
-      <div class="stat"><div class="l">سرعة الخط (تنزيل)</div><div class="v" id="stSpeed">—</div><div class="s" id="stProf"></div></div>
-      <div class="stat"><div class="l">محرك QoS</div><div class="v" id="stQos">—</div></div>
-      <div class="stat"><div class="l">الأجهزة المتصلة</div><div class="v" id="stDev">—</div></div>
+      <div class="stat"><div class="l">حالة الإنترنت</div><div class="v" id="stWan">—</div><div class="s" id="stWanS"></div>
+        <div class="netbars" id="nb"></div></div>
+      <div class="stat"><div class="l">التنزيل الآن</div><div class="v" id="stRx">—</div>
+        <div class="s" id="stTx"></div><canvas id="spark"></canvas></div>
+      <div class="stat"><div class="l">محرك QoS</div><div class="v" id="stQos">—</div>
+        <div style="margin-top:10px"><label class="switch"><input type="checkbox" id="swQos" onchange="toggleQos(this)"><span class="slider"></span></label></div></div>
+      <div class="stat"><div class="l">الأجهزة المتصلة</div><div class="v" id="stDev">—</div><div class="s" id="stDevS"></div></div>
     </div>
-    <div class="card" style="margin-top:16px">
+    <div class="card" style="margin-top:15px">
       <h2>⚡ إجراءات سريعة</h2>
-      <div class="row">
-        <div><div class="name">تشغيل / إيقاف محرك QoS</div><div class="note">يكتب على الراوتر فعلياً مع قراءة تأكيد</div></div>
-        <label class="switch"><input type="checkbox" id="swQos" onchange="toggleQos(this)"><span class="slider"></span></label>
-      </div>
-      <div class="row">
-        <div><div class="name">تحديث البيانات</div><div class="note">قراءة حية من الراوتر</div></div>
-        <button class="btn" onclick="loadDash()">تحديث</button>
-      </div>
+      <div class="row"><div><div class="name">قوة خط VDSL</div><div class="note" id="dslNote">—</div></div>
+        <div class="badge on" id="dslSync">—</div></div>
+      <div class="row"><div><div class="name">سجل العمليات</div><div class="note">آخر التغييرات على الراوتر</div></div>
+        <button class="btn btn-sm ghost" onclick="openFeed()">عرض 📜</button></div>
+      <div class="row"><div><div class="name">تحديث البيانات</div><div class="note">قراءة حية من الراوتر</div></div>
+        <button class="btn" onclick="loadDash()">🔄 تحديث</button></div>
     </div>
+    <div class="card"><h2>🕒 الأحداث الأخيرة</h2><div id="feedMini" class="feed"></div></div>
   </section>
 
   <!-- QOS -->
@@ -147,80 +176,71 @@ select.sel{background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--tx
       <button data-q="basic" class="active">عام</button>
       <button data-q="classification">التصنيف</button>
       <button data-q="downlimit">حد التنزيل</button>
-      <button data-q="policing">Traffic Policing</button>
+      <button data-q="policing">Policing</button>
       <button data-q="congestion">الازدحام</button>
       <button data-q="shaping">Shaping</button>
     </div>
-    <div id="qosBody"></div>
+    <div id="qosBody"><div class="load">…</div></div>
   </section>
 
   <!-- DEVICES -->
   <section id="view-devices" class="hidden">
     <div class="card">
-      <h2>📱 الأجهزة المتصلة</h2>
+      <h2>👥 الأجهزة المتصلة <span style="margin-inline-start:auto"><button class="btn btn-sm ghost" onclick="loadDevices()">تحديث</button></span></h2>
       <div id="devBody" class="load">جارٍ التحميل…</div>
+      <p class="note" style="margin-top:12px">💡 زرار ⛔ يحظر الجهاز من واي فاي (قابل للعكس) — وقوالب السرعة تضبط حد تنزيل جاهز للألعاب/الستريمنج.</p>
     </div>
   </section>
 
   <!-- WIFI -->
   <section id="view-wifi" class="hidden">
-    <div class="card">
-      <h2>📶 شبكة الواي فاي</h2>
-      <div id="wifiBody" class="load">جارٍ التحميل…</div>
-    </div>
+    <div class="card"><h2>📶 الشبكة اللاسلكية</h2><div id="wifiBody" class="load">جارٍ التحميل…</div></div>
   </section>
 
-  <!-- LAN / DHCP -->
+  <!-- LAN -->
   <section id="view-lan" class="hidden">
-    <div class="card"><h2>🔌 منافذ LAN</h2><div id="lanBody" class="load">جارٍ التحميل…</div></div>
-    <div class="card"><h2>📜 DHCP</h2><div id="dhcpBody" class="load">جارٍ التحميل…</div></div>
+    <div class="card"><h2>🔌 منافذ LAN</h2><div id="lanBody" class="load">…</div></div>
+    <div class="card"><h2>📜 عناوين DHCP الموزعة</h2><div id="dhcpBody" class="load">…</div></div>
   </section>
 
   <!-- SECURITY -->
   <section id="view-security" class="hidden">
-    <div class="card"><h2>🛡️ الجدار الناري</h2><div id="fwBody" class="load">جارٍ التحميل…</div></div>
+    <div class="card"><h2>🛡️ الجدار الناري</h2><div id="fwBody" class="load">…</div></div>
+    <div class="card"><h2>🚫 حجب المواقع (URL Filter)</h2><div id="urlBody" class="load">…</div></div>
   </section>
 
   <!-- SYSTEM -->
   <section id="view-system" class="hidden">
-    <div class="card"><h2>ℹ️ بيانات الجهاز</h2><div id="sysInfo" class="load">جارٍ التحميل…</div></div>
+    <div class="card"><h2>ℹ️ بيانات الجهاز</h2><div id="sysInfo" class="load">…</div></div>
+    <div class="card"><h2>💾 نسخة احتياطية وإرجاع</h2><div id="bakBody" class="load">…</div></div>
     <div class="card danger-zone">
       <h2>⚠️ منطقة الخطر</h2>
-      <div class="row">
-        <div><div class="name">إعادة تشغيل الراوتر</div><div class="note">تاخد حوالي ٥ دقايق وكل الاتصالات هتقطع مؤقتاً</div></div>
-        <button class="btn" onclick="askReboot()">🔄 ريستارت</button>
-      </div>
-      <div class="row">
-        <div><div class="name">إرجاع إعدادات المصنع</div><div class="note">كل الإعدادات هتتمسح — الواي فاي هيرجع للاسم والباسورد الافتراضي</div></div>
-        <button class="btn red" onclick="askReset()">☠️ Reset</button>
-      </div>
+      <div class="row"><div><div class="name">إعادة تشغيل الراوتر</div><div class="note">حوالي ٥ دقايق بدون إنترنت</div></div>
+        <button class="btn" onclick="askReboot()">🔄 ريستارت</button></div>
+      <div class="row"><div><div class="name">إرجاع إعدادات المصنع</div><div class="note">⚠️ مسح كل الإعدادات — استخدم النسخ الاحتياطي أولاً</div></div>
+        <button class="btn red" onclick="askReset()">☠️ Reset</button></div>
     </div>
   </section>
 </div>
 
-<div class="modal hidden" id="modal">
-  <div class="modal-box">
-    <h3><span id="modalTitle"></span><span class="x" onclick="closeModal()">✕</span></h3>
-    <div id="modalBody" class="frm"></div>
-    <div class="err hidden" id="modalErr"></div>
-  </div>
-</div>
+<div class="modal hidden" id="modal"><div class="modal-box">
+  <h3><span id="modalTitle"></span><span class="x" onclick="closeModal()">✕</span></h3>
+  <div id="modalBody" class="frm"></div>
+  <div class="err hidden" id="modalErr"></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-let qosCache = {}, wifiCache = null;
-// API base: same-origin when served by the local server; localhost when hosted
-// remotely (e.g. GitHub Pages) — browsers allow https→http://127.0.0.1 fetches
-// only if the local server is running (it sends CORS headers).
 const API = (location.hostname === "127.0.0.1" || location.hostname === "localhost" || location.protocol === "file:") ? "" : "http://127.0.0.1:8766";
+let qosCache = {}, wifiCache = null, devicesCache = [], busy = false;
 
 function toast(msg, err){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
-  clearTimeout(t._h); t._h = setTimeout(()=>t.className = "toast", 2800);
+  clearTimeout(t._h); t._h = setTimeout(()=>t.className = "toast", 3000);
 }
-async function jget(u){ const r = await fetch(API + u); return r.json(); }
+async function jget(u){ const r = await fetch(API + u); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
 async function jpost(u, b){
   const r = await fetch(API + u, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b||{})});
   return r.json();
@@ -228,49 +248,104 @@ async function jpost(u, b){
 function esc(s){ return (s??"").toString().replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
 function fmtRate(v){ if(v===undefined||v===null||v===""||isNaN(+v)) return "—"; v=+v;
   if(v>=1e6) return (v/1e6).toFixed(v%1e6?1:0)+" Mbps"; if(v>=1e3) return (v/1e3).toFixed(v%1e3?1:0)+" Kbps"; return v+" bps"; }
-function badge(on, onTxt, offTxt){ return on?'<span class="badge on">'+(onTxt||"شغال")+'</span>':'<span class="badge off">'+(offTxt||"متوقف")+'</span>'; }
+function fmtDur(s){ s=+s||0; const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  return (d?d+" ي ":"")+(h?h+" س ":"")+m+" د"; }
+function badge(on, t1, t0){ return `<span class="badge ${on?"on":"off"}">${on?(t1||"شغال"):(t0||"متوقف")}</span>`; }
 
-// ================= STATUS / DASHBOARD =================
-async function checkStatus(){
+// ==================== traffic ====================
+let sparkHist = [];
+function drawSpark(){
+  const cv = $("#spark"); if(!cv) return;
+  const ctx = cv.getContext("2d");
+  const W = cv.width = cv.offsetWidth*2, H = cv.height = 220;
+  ctx.clearRect(0,0,W,H);
+  const pts = sparkHist.slice(-60); if(pts.length<2) return;
+  const max = Math.max(...pts.map(p=>p[0]||1), 1);
+  const grid = "rgba(255,255,255,.06)"; ctx.lineWidth=1;
+  for(let i=1;i<3;i++){ ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(0,H*i/3); ctx.lineTo(W,H*i/3); ctx.stroke(); }
+  const line=(idx,color)=>{ ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.lineJoin="round";
+    pts.forEach((p,i)=>{ const x=W*i/(pts.length-1), y=H-((p[idx]||0)/max)*H*.92; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,color.replace("rgb","rgba").replace(")",",.18)")); g.addColorStop(1,"transparent");
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); };
+  line(0,"rgb(76,201,240)"); line(1,"rgb(157,78,221)");
+}
+async function tickTraffic(){
+  if(busy) return;
+  try{
+    const t = await jget("/api/traffic");
+    if(!t.ok) return;
+    $("#stRx").textContent = fmtRate(t.rx_rate);
+    $("#stTx").textContent = "↑ " + fmtRate(t.tx_rate);
+    sparkHist.push([t.rx_rate, t.tx_rate]);
+    drawSpark();
+    const nb = $("#nb");
+    const mx = Math.max(t.rx_rate, 1e5);
+    nb.innerHTML = `<i style="height:${Math.min(100,30+t.rx_rate/mx*70)}%"></i>
+      <i style="height:${Math.min(100,20+t.tx_rate/Math.max(t.tx_rate,1e4)*60)}%;background:linear-gradient(180deg,#c77dff,#9d4edd)"></i>`;
+  }catch(e){}
+}
+
+// ==================== login / dash ====================
+async function boot(){
   try{
     const s = await jget("/api/status");
-    $("#dot").classList.toggle("on", !!s.ok);
-    $("#connTxt").textContent = s.ok ? "متصل بالراوتر" : "جارٍ الاتصال…";
-    if(s.ok) return true;
-    // trigger a single lazy login; the server self-rate-limits router attempts
-    const l = await jget("/api/login").catch(()=>({ok:false}));
-    $("#dot").classList.toggle("on", !!l.ok);
-    $("#connTxt").textContent = l.ok ? "متصل بالراوتر" : "الراوتر بيحاول يرد… جرب تاني بعد شوية";
+    if(s.ok){ setConn(true); return true; }
+    const l = await jget("/api/login");
+    setConn(!!l.ok);
+    if(!l.ok) $("#connTxt").textContent = l.blocked ? "محاولة دخول فاشلة… استنى ٥٠ ثانية" : "فشل الدخول";
     return !!l.ok;
-  }catch(e){ $("#connTxt").textContent = "السيرفر غير شغال"; return false; }
+  }catch(e){ $("#connTxt").textContent = "السيرفر مغلق"; return false; }
+}
+function setConn(ok){
+  $("#dot").classList.toggle("on", ok);
+  $("#connTxt").textContent = ok ? "متصل بالراوتر" : ($("#connTxt").textContent.includes("استنى") ? $("#connTxt").textContent : "غير متصل");
 }
 async function loadDash(){
   try{
     const d = await jget("/api/dashboard");
-    const cs = {"Connected":"متصل ✅","Disconnected":"مقطوع ⛔","Connecting":"بيحاول يتصل…"};
-    $("#stWan").textContent = cs[d.wan?.ConnStatus] || d.wan?.ConnStatus || "—";
-    $("#stWanS").textContent = d.wan?.TransType || "";
-    $("#stSpeed").textContent = fmtRate(+d.dsl?.Downstream_current_rate*1000 || 0);
-    $("#stProf").textContent = d.dsl?.CurrentProfile ? "بروفايل "+d.dsl.CurrentProfile : "";
+    const cs = {"Connected":["متصل ✅","var(--ok)"],"Disconnected":["مقطوع ⛔","var(--bad)"],"Connecting":["جارٍ الاتصال…","var(--warn)"]};
+    const wn = cs[d.wan?.ConnStatus] || [d.wan?.ConnStatus||"—","var(--tx)"];
+    $("#stWan").innerHTML = `<span style="color:${wn[1]}">${esc(wn[0])}</span>`;
+    $("#stWanS").textContent = (d.wan?.TransType||"") + (d.wan?.UpTime?" · متصل من "+fmtDur(d.wan.UpTime):"");
     $("#stQos").textContent = d.qos_enabled==="1" ? "مُفعّل ✅" : d.qos_enabled==="0" ? "متوقف ⛔" : "—";
-    $("#stDev").textContent = d.devices_count ?? "—";
     $("#swQos").checked = d.qos_enabled==="1";
+    const nDev = d.devices_count;
+    $("#stDev").textContent = nDev ?? "—";
+    const dsl = d.dsl||{};
+    $("#stDevS").textContent = ((d.net&&d.net[0])?"تنزيل نشط":"") ;
+    $("#dslNote").textContent = `VDSL2 ${dsl.CurrentProfile||""} · ${(+dsl.Downstream_current_rate/1000).toFixed(0)}↓ / ${(+(dsl.Upstream_current_rate||0)/1000).toFixed(0)}↑ Mbps · هامش ${(dsl.Downstream_noise_margin/10).toFixed(1)}dB`;
+    $("#dslSync").textContent = dsl.Status==="Up" ? "متزامن" : dsl.Status||"—";
+    $("#dslSync").className = "badge " + (dsl.Status==="Up"?"on":"off");
     if(d.device_info?.SoftwareVer){
-      $("#devInfo").textContent = d.device_info.ModelName?.replace(/&#32;/g," ") + " — fw " + d.device_info.SoftwareVer;
+      $("#devInfo").textContent = (d.device_info.ModelName||"").replace(/&#32;/g," ")+" — fw "+d.device_info.SoftwareVer;
     }
-  }catch(e){ toast("فشل تحميل اللوحة: "+e.message, true); }
+  }catch(e){}
 }
 async function toggleQos(el){
   el.disabled = true;
+  const r = await jpost("/api/qos/basic", {action:"Apply", fields:{Enable: el.checked?"1":"0"}});
+  if(r.ok){ toast("تم تشغيل محرك QoS ✅"); } else { toast("الراوتر رفض: "+r.error, true); el.checked=!el.checked; }
+  el.disabled = false; loadDash();
+}
+async function loadFeed(){
   try{
-    const r = await jpost("/api/qos/basic", {action:"Apply", fields:{Enable: el.checked?"1":"0"}});
-    if(r.ok){ toast(el.checked?"تم تشغيل QoS ✅":"تم إيقاف QoS ⛔"); loadDash(); }
-    else { toast("الراوتر رفض: "+r.error, true); el.checked = !el.checked; }
-  }catch(e){ toast("خطأ: "+e.message, true); el.checked = !el.checked; }
-  el.disabled = false;
+    const f = await jget("/api/ops");
+    const html = f.log.slice(0,8).map(o=>`<div class="frow"><span class="mono">${new Date(o.t*1000).toLocaleTimeString("ar-EG")}</span>
+      <b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || '<div class="empty">لا عمليات بعد</div>';
+    $("#feedMini").innerHTML = html;
+    window._feed = f.log;
+  }catch(e){}
+}
+function openFeed(){
+  $("#modalTitle").textContent = "📜 سجل العمليات";
+  $("#modalErr").classList.add("hidden");
+  $("#modalBody").innerHTML = `<div class="feed">${(window._feed||[]).map(o=>`<div class="frow">
+    <span class="mono">${new Date(o.t*1000).toLocaleString("ar-EG")}</span><b>${esc(o.action)}</b> ${esc(o.detail||"")}</div>`).join("") || "لا عمليات"}</div>`;
+  $("#modal").classList.remove("hidden");
 }
 
-// ================= QOS =================
+// ==================== QOS ====================
 $$(".subnav button").forEach(b=>b.onclick=()=>{
   $$(".subnav button").forEach(x=>x.classList.remove("active"));
   b.classList.add("active"); renderQos(b.dataset.q);
@@ -286,7 +361,8 @@ async function renderQos(sec){
     }
     const d = await jget("/api/qos/"+sec); qosCache[sec]=d;
     body.innerHTML = qosSectionHTML(sec, d);
-    if(sec==="basic") wireQosToggle();
+    if(sec==="basic") wireBasic();
+    if(sec==="classification") wireClass();
   }catch(e){ body.innerHTML='<div class="empty">خطأ: '+esc(e.message)+'</div>'; }
 }
 function qosSectionHTML(sec, d){
@@ -294,322 +370,411 @@ function qosSectionHTML(sec, d){
   const insts = d.instances;
   if(sec==="basic"){
     const i = insts[0] || {};
-    return `<div class="card"><h2>⚙️ الإعدادات العامة لـ QoS</h2>
-      <div class="row"><div><div class="name">حالة المحرك</div>
-      <div class="note">القيمة الحية: Enable=${esc(i.Enable)}</div></div>
-      <label class="switch"><input type="checkbox" id="swBasic" ${i.Enable==="1"?"checked":""}>
-      <span class="slider"></span></label></div></div>`;
+    return `<div class="card"><h2>⚙️ محرك QoS</h2>
+      <div class="row"><div><div class="name">الحالة الحية من الراوتر</div><div class="note">Enable=${esc(i.Enable)} — أي تغيير يكتب مباشرة على الجهاز</div></div>
+      <label class="switch"><input type="checkbox" id="swBasic" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label></div>
+      <p class="note" style="margin-top:8px">💡 المحرك لازم يكون مُفعّل عشان قواعد حد التنزيل والتصنيف تشتغل.</p></div>`;
   }
   if(sec==="policing"){
     return `<div class="card"><h2>🚦 Traffic Policing</h2><table>
-      <tr><th>الاسم</th><th>السرعة</th><th>البيرست</th><th>التجاوز</th><th>الحالة</th></tr>
-      ${insts.map(i=>`<tr><td>${esc(i.Alias)}</td>
-        <td>${i.CommittedRate} <span class="mono">(${fmtRate(i.CommittedRate)})</span></td>
-        <td class="mono">${i.CommittedBurstSize}</td>
-        <td>${esc(i.NonConformingAction)}</td>
-        <td>${badge(i.Enable==="1")}</td></tr>`).join("")}</table>
-      <p class="note" style="margin-top:12px">⚠️ البوليسرز مقفولة من فيرموير التليكو — قراءة فقط.</p></div>`;
+      <tr><th>الاسم</th><th>السرعة</th><th>البيرست</th><th>عند التجاوز</th><th>الحالة</th></tr>
+      ${insts.map(i=>`<tr><td>${esc(i.Alias)}</td><td>${i.CommittedRate} <span class="mono">(${fmtRate(i.CommittedRate)})</span></td>
+        <td class="mono">${i.CommittedBurstSize}</td><td>${esc(i.NonConformingAction)}</td><td>${badge(i.Enable==="1")}</td></tr>`).join("")}</table>
+      <p class="note" style="margin-top:12px">🔒 مقفولة من فيرموير التليكو (قراءة فقط).</p></div>`;
   }
   if(sec==="classification"){
     return `<div class="card"><h2>🏷️ قواعد التصنيف</h2>${insts.map(i=>`
-      <div class="row"><div><div class="name">${esc(i.Alias)} ${badge(i.Enable==="1")}</div>
-      <div class="mono">Order=${esc(i.Order)} · DevIn=${esc(i.DevIn)} · Policer=${esc(i.PolicerQueue)}</div></div>
-      <label class="switch"><input type="checkbox" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}>
-      <span class="slider"></span></label></div>`).join("") || '<div class="empty">لا قواعد</div>'}</div>`;
+      <div class="row"><div style="flex:1"><div class="name">${esc(i.Alias)} ${badge(i.Enable==="1","مطبقة","موقوفة")}</div>
+        <div class="mono">Order=${esc(i.Order)} · DevIn=${esc(i.DevIn)} · Policer=${esc(i.PolicerQueue||"—")}</div>
+        <div class="chips"><span class="chip" onclick="editQcModal('${esc(i._InstID)}')">✏️ تعديل السرعة</span></div></div>
+        <label class="switch"><input type="checkbox" class="qc-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label></div>`).join("") || '<div class="empty">لا قواعد</div>'}
+      <p class="note" style="margin-top:8px">القاعدة تصنّف الحركة (IP/MAC/منفذ/DSCP…) وتحولها لبوليسر يحدد سرعتها.</p></div>`;
   }
   return `<div class="card"><h2>${sec==="congestion"?"🚧 إدارة الازدحام":"🧬 Traffic Shaping"}</h2>
-    <div class="empty">القسم فاضي على الراوتر الحالي — لا عناصر مُهيَّأة.</div></div>`;
+    <div class="empty">فاضي على الراوتر — لا عناصر مُهيَّأة.</div></div>`;
+}
+function wireBasic(){
+  const el = $("#swBasic");
+  el.onchange = async ()=>{
+    el.disabled = true;
+    const r = await jpost("/api/qos/basic",{action:"Apply",fields:{Enable:el.checked?"1":"0"}});
+    toast(r.ok?"تم الحفظ ✅":"رفض الراوتر: "+r.error,!r.ok);
+    if(!r.ok) el.checked=!el.checked;
+    el.disabled=false;
+  };
+}
+function wireClass(){
+  $$(".qc-toggle").forEach(el=>el.onchange = async ()=>{
+    el.disabled = true;
+    const r = await jpost("/api/qos/classification",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
+    toast(r.ok?"تم ✅":"رفض الراوتر: "+r.error,!r.ok);
+    if(!r.ok) el.checked=!el.checked;
+    el.disabled=false;
+  });
+}
+function editQcModal(inst){
+  const i = (qosCache.classification?.instances||[]).find(x=>x._InstID===inst);
+  if(!i) return;
+  const pol = (qosCache.policing?.instances||[]);
+  $("#modalTitle").textContent = "✏️ "+i.Alias;
+  $("#modalErr").classList.add("hidden");
+  $("#modalBody").innerHTML = `
+    <div><label>البوليسر المرتبط</label>
+      <select class="sel" id="qc_pol" style="width:100%">
+        <option value="">بدون</option>
+        ${pol.map(p=>`<option value="${esc(p._InstID)}" ${i.PolicerQueue===p._InstID?"selected":""}>${esc(p.Alias)} (${fmtRate(p.CommittedRate)})</option>`).join("")}
+      </select></div>
+    <div><label>ترتيب القاعدة (Order)</label><input class="txt" id="qc_order" type="number" min="1" max="32" value="${esc(i.Order)}" style="width:100%"></div>
+    <button class="btn" onclick="saveQc('${esc(inst)}')">حفظ على الراوتر</button>`;
+  $("#modal").classList.remove("hidden");
+}
+async function saveQc(inst){
+  const i = qosCache.classification.instances.find(x=>x._InstID===inst);
+  const r = await jpost("/api/qos/classification",{action:"Apply",instId:inst,fields:{
+    Order:$("#qc_order").value||"1", PolicerQueue:$("#qc_pol").value||"-1",
+    Alias:i.Alias, Enable:i.Enable}});
+  if(r.ok){ toast("تم الحفظ ✅"); closeModal(); renderQos("classification"); }
+  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 function downlimitHTML(g, r){
   const gi = g.instances[0] || {};
-  return `<div class="card"><h2>⬇️ حد التنزيل — عام</h2>
-    <div class="row"><div><div class="name">الخاصية مُفعّلة</div>
-      <div class="note">DownBandwidth=${esc(gi.DownBandwidth)} bps</div></div>
-      <label class="switch"><input type="checkbox" id="sw_dl" ${gi.Enable==="1"?"checked":""}>
-      <span class="slider"></span></label></div></div>
+  return `<div class="card"><h2>⬇️ حد التنزيل — العام</h2>
+    <div class="row"><div><div class="name">الخاصية</div>
+      <div class="note">DownBandwidth=${esc(gi.DownBandwidth)} bps ${(+gi.DownBandwidth>0)?`(${fmtRate(+gi.DownBandwidth)})`:"— (بدون حد عام)"}</div></div>
+      <label class="switch"><input type="checkbox" id="sw_dl" ${gi.Enable==="1"?"checked":""}><span class="slider"></span></label></div></div>
     <div class="card"><h2>📲 حدود لكل جهاز</h2>${ r.instances.length ? `<table>
       <tr><th>الاسم</th><th>MAC</th><th>الحد</th><th>الحالة</th><th>تحكم</th></tr>
       ${r.instances.map(i=>`<tr><td>${esc(i.Alias)}</td><td class="mono">${esc(i.DestMAC)}</td>
         <td>${i.DownBandwidth} <span class="mono">(${fmtRate(+i.DownBandwidth)})</span></td>
         <td>${badge(i.Enable==="1")}</td>
-        <td><label class="switch"><input type="checkbox" class="dl-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}>
-          <span class="slider"></span></label>
+        <td><label class="switch"><input type="checkbox" class="dl-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label>
           <button class="btn btn-sm red" style="margin-inline-start:8px" onclick="delRule('${esc(i._InstID)}')">🗑️</button></td></tr>`).join("")}
-      </table>` : '<div class="empty">لا قواعد — ضيف واحدة</div>'}
-      <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap">
-        <button class="btn" onclick="addRuleModal()">➕ ضيف حد لجهاز</button></div>
-      <p class="note" style="margin-top:10px">الحد بالـ bps (8192~100000000) — مثال: 4000000 = 4 Mbps.</p></div>`;
+      </table>` : '<div class="empty">لا قواعد — جرّب قوالب الأجهزة أو أضف يدوي</div>'}
+      <div style="margin-top:15px;display:flex;gap:9px;flex-wrap:wrap"><button class="btn" onclick="addRuleModal()">➕ إضافة حد لجهاز</button></div>
+      <p class="note" style="margin-top:10px">الحد بالـ bps (8192~100000000). القاعدة تشتغل على طول لما حد التنزيل العام مُفعّل + محرك QoS.</p></div>`;
 }
-function wireQosToggle(){
-  const el = $("#swBasic"); if(!el || el._w) return; el._w = 1;
-  el.onchange = async ()=>{
-    el.disabled = true;
-    const r = await jpost("/api/qos/basic",{action:"Apply",fields:{Enable:el.checked?"1":"0"}});
-    toast(r.ok? "تم الحفظ ✅":"رفض الراوتر: "+r.error, !r.ok);
-    if(!r.ok) el.checked=!el.checked;
-    el.disabled = false;
-  };
-}
-async function wireDownlimit(){
+function wireDownlimit(){
   const sw = $("#sw_dl");
   if(sw) sw.onchange = async ()=>{
-    sw.disabled = true;
+    sw.disabled=true;
     const gi = qosCache.downlimit_global?.instances?.[0] || {};
-    const r = await jpost("/api/qos/downlimit_global",{action:"Apply",
-      fields:{Enable: sw.checked?"1":"0", DownBandwidth: gi.DownBandwidth ?? "0"}});
-    toast(r.ok? "تم الحفظ ✅":"رفض الراوتر: "+r.error, !r.ok);
+    const r = await jpost("/api/qos/downlimit_global",{action:"Apply",fields:{Enable:sw.checked?"1":"0",DownBandwidth:gi.DownBandwidth??"0"}});
+    toast(r.ok?"تم الحفظ ✅":"رفض الراوتر: "+r.error,!r.ok);
     if(!r.ok) sw.checked=!sw.checked;
-    sw.disabled = false;
+    sw.disabled=false;
   };
   $$(".dl-toggle").forEach(el=>el.onchange = async ()=>{
-    el.disabled = true;
+    el.disabled=true;
     const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
-    toast(r.ok? `تم ${el.checked?"تشغيل":"إيقاف"} الحد ✅`:"رفض الراوتر: "+r.error, !r.ok);
+    toast(r.ok?"تم ✅":"رفض الراوتر: "+r.error,!r.ok);
     if(!r.ok) el.checked=!el.checked;
-    el.disabled = false;
+    el.disabled=false;
   });
 }
-async function toggleClass(el){
-  el.disabled = true;
-  const r = await jpost("/api/qos/classification",{action:"Apply",instId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
-  toast(r.ok? "تم الحفظ ✅":"رفض الراوتر: "+r.error, !r.ok);
-  if(!r.ok) el.checked=!el.checked;
-  el.disabled = false;
+async function delRule(inst){
+  if(!confirm("حذف القاعدة؟")) return;
+  await jpost("/api/qos/downlimit_rules",{action:"Delete",instId:inst});
+  toast("اتمسحت"); renderQos("downlimit");
 }
-function addRuleModal(){
-  const devs = window._devices || [];
-  $("#modalTitle").textContent = "➕ إضافة حد تنزيل لجهاز";
+function addRuleModal(mac, name){
+  const devs = devicesCache || [];
+  $("#modalTitle").textContent = "➕ حد تنزيل لجهاز";
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
-    <div><label>اسم القاعدة</label><input class="txt" id="f_alias" style="width:100%" value="حد جديد"></div>
-    <div><label>اختر جهاز (اختياري — أو اكتب MAC)</label>
-      <select class="sel" id="f_dev" style="width:100%">
-        <option value="">— اكتب يدوي —</option>
-        ${devs.map(d=>`<option value="${esc(d.mac)}">${esc(d.name)} (${esc(d.ip)})</option>`).join("")}
-      </select></div>
-    <div><label>MAC الجهاز</label><input class="txt" id="f_mac" style="width:100%" placeholder="AA:BB:CC:DD:EE:FF"></div>
-    <div><label>السرعة (Mbps)</label><input class="txt" id="f_bw" style="width:100%" value="5" type="number" min="1" max="1000"></div>
+    <div><label>اسم القاعدة</label><input class="txt" id="f_alias" style="width:100%" value="${esc(name||"حد جديد")}"></div>
+    <div><label>الجهاز</label><select class="sel" id="f_dev" style="width:100%">
+      <option value="">— MAC يدوي —</option>
+      ${devs.map(d=>`<option value="${esc(d.mac)}" ${mac===d.mac?"selected":""}>${esc(d.name)} · ${esc(d.ip)}</option>`).join("")}
+    </select></div>
+    <div><label>MAC</label><input class="txt" id="f_mac" style="width:100%" value="${esc(mac||"")}"></div>
+    <div><label>السرعة (Mbps)</label><input class="txt" id="f_bw" type="number" min="1" max="100" style="width:100%" value="5"></div>
     <button class="btn" onclick="saveNewRule()">إضافة</button>`;
   $("#modal").classList.remove("hidden");
   $("#f_dev").onchange = e=>{ if(e.target.value) $("#f_mac").value = e.target.value; };
 }
 async function saveNewRule(){
-  const alias = $("#f_alias").value.trim() || "حد";
-  const mac = $("#f_mac").value.trim();
-  const mbps = +$("#f_bw").value || 1;
-  if(!/^[0-9a-fA-F:]{17}$/.test(mac)){ $("#modalErr").textContent="اكتب MAC صحيح (17 حرف مع :)"; $("#modalErr").classList.remove("hidden"); return; }
+  const alias = $("#f_alias").value.trim()||"حد";
+  const mac = $("#f_mac").value.trim().toLowerCase();
+  const bps = String((+$("#f_bw").value||1)*1e6);
+  if(!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)){ $("#modalErr").textContent="MAC غير صحيح"; $("#modalErr").classList.remove("hidden"); return; }
   const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:"-1",fields:{
-    Alias:alias, Enable:"0", ManaType:"mac", DestMAC:mac.toLowerCase(),
-    IPDest:"0.0.0.0", IPDestMask:"0.0.0.0", DestDevIF:"DEV.BRIDGING.BR1.BRPORT2",
-    DownBandwidth:String(mbps*1e6)}});
-  if(r.ok){ toast("تمت الإضافة ✅ (شغّل القاعدة بالزرار)"); closeModal(); renderQos("downlimit"); }
-  else { $("#modalErr").textContent = "الراوتر رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
-}
-async function delRule(inst){
-  if(!confirm("متأكد من حذف القاعدة؟")) return;
-  const r = await jpost("/api/qos/downlimit_rules",{action:"Delete",instId:inst});
-  toast(r.ok ? "اتمسحت ✅" : "الراوتر رد: "+r.error, !r.ok);
-  renderQos("downlimit");
+    Alias:alias,Enable:"1",ManaType:"mac",DestMAC:mac,IPDest:"0.0.0.0",IPDestMask:"0.0.0.0",
+    DestDevIF:"DEV.BRIDGING.BR1.BRPORT2",DownBandwidth:bps}});
+  if(r.ok){ toast("تمت الإضافة ✅"); closeModal();
+    $$(".subnav button").forEach(x=>x.classList.remove("active"));
+    $$(".subnav button")[2].classList.add("active"); renderQos("downlimit"); }
+  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 
-// ================= DEVICES =================
+// ==================== DEVICES ====================
 async function loadDevices(){
   const b = $("#devBody"); b.className="load"; b.textContent="جارٍ التحميل…";
   try{
     const d = await jget("/api/devices");
-    window._devices = d.devices;
+    devicesCache = d.devices;
     if(!d.devices.length){ b.className="empty"; b.textContent="لا أجهزة"; return; }
-    b.className = "";
-    b.innerHTML = "<table><tr><th>الجهاز</th><th>IP</th><th>MAC</th><th>اتصال</th><th>حد تنزيل</th></tr>" +
-      d.devices.map(x=>`<tr><td>${esc(x.name)}</td><td class="mono">${esc(x.ip)}</td>
-        <td class="mono">${esc(x.mac)}</td><td>${x.type==="wifi"?"📶 واي فاي":x.type==="lan"?"🔌 كابل":"💾 USB"}</td>
-        <td><button class="btn btn-sm" onclick="quickLimit('${esc(x.mac)}','${esc(x.name).replace(/'/g,"")}')">⚡ حده</button></td></tr>`).join("") + "</table>";
+    b.className="";
+    b.innerHTML = `<table><tr><th>الجهاز</th><th>IP</th><th>اتصال</th><th>الحالة</th><th>قوالب سرعة</th><th>تحكم</th></tr>
+      ${d.devices.map((x,ix)=>`<tr>
+        <td><div style="display:flex;gap:9px;align-items:center"><div class="avatar">${x.type==="wifi"?"📱":x.type==="lan"?"💻":"🔌"}</div>
+          <div><div class="name" style="font-weight:600">${esc(x.name)}</div>
+          <div class="mono">${esc(x.mac)}${x.custom?" ✏️":""}</div></div></div></td>
+        <td class="mono">${esc(x.ip)}</td>
+        <td>${x.type==="wifi"?"📶 "+esc(x.ssid):x.type==="lan"?"🔌 كابل":"💾 USB"}</td>
+        <td>${x.blocked?'<span class="badge ban">⛔ محظور</span>':badge(true,"متصل")}</td>
+        <td><div class="chips">
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','gaming')">🎮 2M</span>
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','streaming')">🎬 15M</span>
+          <span class="chip" onclick="applyPreset('${esc(x.mac)}','homework')">📚 8M</span>
+          <span class="chip red" onclick="applyPreset('${esc(x.mac)}','free')">✖️ بدون</span></div></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm" onclick="renameModal('${esc(x.mac)}','${esc(x.auto)}')">✏️</button>
+          <button class="btn btn-sm ${x.blocked?"":"red"}" onclick="toggleBlock('${esc(x.mac)}',${!x.blocked})">${x.blocked?"✅ فك":"⛔ حظر"}</button></td>
+      </tr>`).join("")}</table>`;
   }catch(e){ b.textContent="خطأ: "+e.message; }
 }
-function quickLimit(mac, name){
-  $$('.subnav button').forEach(x=>x.classList.remove('active'));
-  $$('#view-qos .subnav button')[2].classList.add('active');
-  $$('nav button').forEach(x=>x.classList.remove('active'));
-  $$('nav button')[1].classList.add('active');
-  ["dash","qos","devices","wifi","lan","security","system"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!=="qos"));
-  showView("qos"); renderQos("downlimit").then(()=>addRuleModal());
-  setTimeout(()=>{ if($("#f_mac")) $("#f_mac").value = mac; if($("#f_alias")) $("#f_alias").value = name || "حد"; }, 600);
+async function applyPreset(mac, preset){
+  busy = true;
+  const r = await jpost("/api/devices/preset",{mac,preset});
+  busy = false;
+  toast(r.ok? "تم التطبيق ✅ ("+(preset==="free"?"بدون حد":preset)+")":"فشل: "+(r.error||""), !r.ok);
+  if(r.ok) loadDevices();
+}
+function renameModal(mac, auto){
+  $("#modalTitle").textContent = "✏️ تسمية الجهاز";
+  $("#modalErr").classList.add("hidden");
+  $("#modalBody").innerHTML = `
+    <div><label>اسم جديد (سيظهر في اللوحة فقط)</label><input class="txt" id="rn" style="width:100%" value="${esc(auto)}"></div>
+    <button class="btn" onclick="saveName('${esc(mac)}')">حفظ</button>`;
+  $("#modal").classList.remove("hidden");
+}
+async function saveName(mac){
+  const name = $("#rn").value.trim();
+  const r = await jpost("/api/devices/name",{mac,name});
+  if(r.ok){ toast("اتحفظ ✅"); closeModal(); loadDevices(); }
+}
+async function toggleBlock(mac, block){
+  if(block && !confirm("حظر "+mac+" من الواي فاي؟ الجهاز هيتقطع لحد ما تفك الحظر")) return;
+  const r = await jpost("/api/devices/block",{mac,block});
+  toast(r.ok? (block?"تم الحظر ⛔":"فك الحظر ✅") : "فشل: "+r.error, !r.ok);
+  if(r.ok) loadDevices();
 }
 
-// ================= WIFI =================
+// ==================== WIFI ====================
 async function loadWifi(){
   const b = $("#wifiBody"); b.className="load"; b.textContent="جارٍ التحميل…";
   try{
     const d = await jget("/api/wifi"); wifiCache = d;
-    b.className = "";
-    const r = d.radio || {};
-    let html = `<div class="row"><div><div class="name">الواي فاي شغال</div>
-      <div class="note">RadioStatus=${esc(r.RadioStatus)} — تغييره بيفصل كل الواي فاي مؤقتاً</div></div>
-      <label class="switch"><input type="checkbox" id="swRadio" ${r.RadioStatus==="1"?"checked":""}>
-      <span class="slider"></span></label></div>`;
-    html += d.aps.map((a,idx)=>{
-      const pskId = a._InstID + ".PSK1";
-      return `<div class="row"><div style="flex:1">
-        <div class="name">${esc(a.Alias)} — <span class="mono">${esc(a.ESSID)}</span> ${badge(a.Enable==="1")}
-        ${a.ESSIDHideEnable==="1"?'<span class="badge off">مخفي 👻</span>':""}</div>
+    const r = d.radio||{}, cf = d.conf||{};
+    let html = `<div class="row"><div><div class="name">الراديو</div>
+      <div class="note">RadioStatus=${esc(r.RadioStatus)} — إطفاءه يفصل كل الواي فاي</div></div>
+      <label class="switch"><input type="checkbox" id="swRadio" ${r.RadioStatus==="1"?"checked":""}><span class="slider"></span></label></div>
+      <div class="row"><div><div class="name">قناة البث (Channel)</div>
+      <div class="note">الحاليّة: ${cf.AutoChannelEnabled==="1"?"تلقائي":"قناة "+esc(cf.Channel)} · عرض ${esc(cf.BandWidth)}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="sel" id="chSel"><option value="">تلقائي</option>${[1,2,3,4,5,6,7,8,9,10,11,12,13].map(c=>`<option>${c}</option>`).join("")}</select>
+        <button class="btn btn-sm" onclick="setChannel()">تطبيق</button></div></div>`;
+    html += `<h2 style="margin-top:18px">شبكات SSID</h2>`;
+    html += d.aps.map((a,ix)=>`
+      <div class="row"><div style="flex:1">
+        <div class="name">${esc(a.Alias)} — <b class="mono">${esc(a.ESSID)}</b> ${badge(a.Enable==="1")}
+          ${a.ESSIDHideEnable==="1"?'<span class="badge off">مخفية 👻</span>':''}</div>
         <div class="mono">${esc(a._InstID)} · ${esc(a.BeaconType)}</div>
-        <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-sm" onclick="editWifiModal('${esc(a._InstID)}')">✏️ تعديل</button>
-          ${a.Enable==="1"?`<button class="btn btn-sm" onclick="showPass('${esc(a._InstID)}', ${idx})">🔑 اظهر الباسورد</button>`:""}
+        <div class="chips">
+          <span class="chip" onclick="editWifiModal('${esc(a._InstID)}')">✏️ إعدادات الشبكة</span>
+          ${a.Enable==="1"?`<span class="chip" onclick="showPass('${esc(a._InstID)}',${ix})">🔑 الباسورد</span>`:""}
         </div>
-        <div class="mono" id="pass_${idx}" style="margin-top:7px;font-size:14px;color:var(--ok)"></div>
-      </div></div>`;
-    }).join("");
-    b.innerHTML = html;
+        <div class="mono" id="pass_${ix}" style="margin-top:7px;color:var(--ok)"></div>
+      </div>
+      <label class="switch"><input type="checkbox" class="ap-toggle" data-inst="${esc(a._InstID)}" ${a.Enable==="1"?"checked":""}><span class="slider"></span></label></div>`).join("");
+    b.className=""; b.innerHTML = html;
     $("#swRadio").onchange = async el=>{
-      if(!confirm("هتشغل/توقف الواي فاي بالكامل؟ كل الأجهزة اللي على واي فاي هتنفصل")){ el.target.checked=!el.target.checked; return; }
-      el.target.disabled = true;
-      const rr = await jpost("/api/wifi/radio", {on: el.target.checked});
-      toast(rr.ok ? "تم ✅" : "رفض الراوتر: "+rr.error, !rr.ok);
-      el.target.disabled = false; loadWifi();
+      if(!confirm("تشغيل/إطفاء كل الواي فاي؟")){ el.target.checked=!el.target.checked; return; }
+      el.target.disabled=true;
+      const rr = await jpost("/api/wifi/radio",{on:el.target.checked});
+      toast(rr.ok?"تم ✅":"رفض: "+rr.error,!rr.ok);
+      el.target.disabled=false; loadWifi();
     };
+    $$(".ap-toggle").forEach(el=>el.onchange=async()=>{
+      el.disabled=true;
+      const ap = d.aps.find(a=>a._InstID===el.dataset.inst);
+      const rr = await jpost("/api/wifi/save",{apId:el.dataset.inst,fields:{Enable:el.checked?"1":"0"}});
+      toast(rr.ok?"تم ✅":"رفض: "+rr.error,!rr.ok);
+      if(!rr.ok) el.checked=!el.checked;
+      el.disabled=false; loadWifi();
+    });
   }catch(e){ b.textContent="خطأ: "+e.message; }
 }
-async function showPass(apId, idx){
-  const r = await jget("/api/wifi/password?"+apId);
-  const el = $("#pass_"+idx);
-  el.textContent = r.ok ? "🔑 " + r.password : "خطأ: "+r.error;
+async function setChannel(){
+  const v = $("#chSel").value;
+  const r = await jpost("/api/wifi/channel",{channel:v||1,auto:!v});
+  toast(r.ok? (v?"تمضبط على قناة "+v:"رجع تلقائي ✅") : "رفض: "+r.error, !r.ok);
+  if(r.ok) loadWifi();
+}
+async function showPass(apId, ix){
+  const r = await jget("/api/wifi/password?ap="+apId);
+  const el = $("#pass_"+ix);
+  el.textContent = r.ok ? "🔑 "+r.password : "خطأ: "+r.error;
 }
 function editWifiModal(apId){
   const ap = wifiCache.aps.find(a=>a._InstID===apId);
   if(!ap) return;
-  $("#modalTitle").textContent = "✏️ تعديل " + ap.Alias;
+  $("#modalTitle").textContent = "✏️ "+ap.Alias;
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
     <div><label>اسم الشبكة (SSID)</label><input class="txt" id="w_essid" style="width:100%" value="${esc(ap.ESSID)}"></div>
     <div class="frm-row">
-      <div><label>إخفاء الشبكة</label>
-        <select class="sel" id="w_hide" style="width:100%">
-          <option value="0" ${ap.ESSIDHideEnable==="0"?"selected":""}>ظاهرة</option>
-          <option value="1" ${ap.ESSIDHideEnable==="1"?"selected":""}>مخفية 👻</option>
-        </select></div>
-      <div><label>الحالة</label>
-        <select class="sel" id="w_en" style="width:100%">
-          <option value="1" ${ap.Enable==="1"?"selected":""}>شغالة</option>
-          <option value="0" ${ap.Enable==="0"?"selected":""}>واقفة</option>
-        </select></div>
-    </div>
-    <div><label>باسورد الواي فاي (سيبه فاضي لو مش هتغيره — 8 حروف على الأقل)</label>
-      <input class="txt" id="w_pass" style="width:100%" placeholder="اتركه فارغ لعدم التغيير"></div>
-    <button class="btn" onclick="saveWifi('${esc(apId)}')">حفظ على الراوتر</button>`;
+      <div><label>إخفاء</label><select class="sel" id="w_hide" style="width:100%">
+        <option value="0" ${ap.ESSIDHideEnable==="0"?"selected":""}>ظاهرة</option>
+        <option value="1" ${ap.ESSIDHideEnable==="1"?"selected":""}>مخفية 👻</option></select></div>
+      <div><label>الحالة</label><select class="sel" id="w_en" style="width:100%">
+        <option value="1" ${ap.Enable==="1"?"selected":""}>شغالة</option>
+        <option value="0" ${ap.Enable==="0"?"selected":""}>واقفة</option></select></div></div>
+    <div><label>باسورد جديد (اتركه فاضي = بدون تغيير — 8 حروف على الأقل)</label>
+      <input class="txt" id="w_pass" type="text" style="width:100%" placeholder="••••••••"></div>
+    <button class="btn" onclick="saveWifi('${esc(apId)}')">💾 حفظ على الراوتر</button>`;
   $("#modal").classList.remove("hidden");
 }
 async function saveWifi(apId){
-  const fields = {
-    ESSID: $("#w_essid").value.trim(),
-    ESSIDHideEnable: $("#w_hide").value,
-    Enable: $("#w_en").value,
-  };
+  const fields = {ESSID:$("#w_essid").value.trim(), ESSIDHideEnable:$("#w_hide").value, Enable:$("#w_en").value};
   const pw = $("#w_pass").value;
-  if(pw){
-    if(pw.length < 8){ $("#modalErr").textContent="الباسورد لازم 8 حروف على الأقل (الراوتر هيرفض أقصر)"; $("#modalErr").classList.remove("hidden"); return; }
-    fields.KeyPassphrase = pw;
-  }
-  const r = await jpost("/api/wifi/save", {apId, fields});
+  if(pw){ if(pw.length<8){ $("#modalErr").textContent="الباسورد لازم 8 حروف على الأقل"; $("#modalErr").classList.remove("hidden"); return;} fields.KeyPassphrase=pw; }
+  const r = await jpost("/api/wifi/save",{apId,fields});
   if(r.ok){ toast("تم الحفظ على الراوتر ✅"); closeModal(); loadWifi(); }
-  else { $("#modalErr").textContent = "الراوتر رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
+  else { $("#modalErr").textContent="رفض الراوتر: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 
-// ================= LAN =================
+// ==================== LAN ====================
 async function loadLan(){
   try{
-    const st = await jget("/api/devices");
-    const xmlLan = await jget("/api/qos/policing"); // placeholder keepalive
-    const b1 = $("#lanBody");
-    // LAN ports via lanStatus
-    const lanStat = await jget("/api/lanstatus");
-    b1.className = "";
-    b1.innerHTML = "<table><tr><th>المنفذ</th><th>الحالة</th><th>السرعة</th><th>استقبل</th><th>بعت</th></tr>" +
-      lanStat.ports.map(p=>`<tr><td>${esc(p.name)}</td>
-        <td>${p.status==="Up"?'<span class="badge on">موصل</span>':'<span class="badge off">فاضي</span>'}</td>
-        <td class="mono">${p.speed} Mbps ${esc(p.duplex)}</td>
-        <td class="mono">${fmtRate(+p.rx)}</td><td class="mono">${fmtRate(+p.tx)}</td></tr>`).join("") + "</table>";
-    const b2 = $("#dhcpBody");
-    const dh = await jget("/api/qos/dhcp");
-    const leases = await jget("/api/dhcpleases");
-    b2.className = "";
-    let html = "";
-    const d0 = dh.instances[0] || {};
-    if(d0.DHCPServerEnable !== undefined || d0.Enable !== undefined){
-      html += `<div class="row"><div class="name">سيرفر DHCP</div>
-        <div>${badge(d0.DHCPServerEnable==="1"||d0.Enable==="1")}</div></div>`;
-    }
-    html += `<h2 style="margin:14px 0 8px">📜 آخر العناوين الموزعة (${leases.leases.length})</h2>
-      ${leases.leases.length ? "<table><tr><th>الجهاز</th><th>IP</th><th>MAC</th><th>منفذ</th><th>ينتهي بعد (ث)</th></tr>" +
-      leases.leases.map(l=>`<tr><td>${esc(l.host)}</td><td class="mono">${esc(l.ip)}</td>
-        <td class="mono">${esc(l.mac)}</td><td>${esc(l.port)}</td><td class="mono">${esc(l.expires)}</td></tr>`).join("")+"</table>"
-      : '<div class="empty">لا عناوين</div>'}`;
-    b2.innerHTML = html;
-  }catch(e){
-    $("#lanBody").textContent = "خطأ: "+e.message;
-  }
+    const [ls, dh] = await Promise.all([jget("/api/lanstatus"), jget("/api/dhcpleases")]);
+    $("#lanBody").className="";
+    $("#lanBody").innerHTML = "<table><tr><th>المنفذ</th><th>الحالة</th><th>السرعة</th><th>استقبل</th><th>أرسل</th></tr>" +
+      ls.ports.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.status==="Up"?'<span class="badge on">موصل 🔗</span>':'<span class="badge off">فاضي</span>'}</td>
+        <td class="mono">${p.speed} Mbps ${esc(p.duplex)}</td><td class="mono">${fmtRate(+p.rx*8)}</td><td class="mono">${fmtRate(+p.tx*8)}</td></tr>`).join("")+"</table>";
+    $("#dhcpBody").className="";
+    $("#dhcpBody").innerHTML = dh.leases.length ? `<table><tr><th>الجهاز</th><th>IP</th><th>MAC</th><th>منفذ</th></tr>` +
+      dh.leases.map(l=>`<tr><td>${esc(l.host)}</td><td class="mono">${esc(l.ip)}</td><td class="mono">${esc(l.mac)}</td><td>${esc(l.port)}</td></tr>`).join("")+"</table>"
+      : '<div class="empty">لا عقود</div>';
+  }catch(e){ $("#lanBody").textContent="خطأ: "+e.message; }
 }
 
-// ================= SECURITY =================
+// ==================== SECURITY ====================
 async function loadSecurity(){
   try{
     const fw = await jget("/api/qos/firewall");
     const i = fw.instances[0] || {};
-    const lvls = {"Low":"منخفض","Middle":"متوسط","High":"عالي"};
-    $("#fwBody").className = "";
-    $("#fwBody").innerHTML = `
-      <div class="row"><div><div class="name">مستوى الحماية</div>
-      <div class="note">الحالي: ${esc(lvls[i.Level]||i.Level||"—")} · مضاد الهجمات: ${badge(i.AntiAttack==="1")}</div></div>
-      <select class="sel" id="fwLevel" onchange="setFw(this.value)">
-        ${Object.entries(lvls).map(([k,v])=>`<option value="${k}" ${i.Level===k?"selected":""}>${v}</option>`).join("")}
-      </select></div>`;
+    const lvls = {Low:"منخفض 🟢",Middle:"متوسط 🟡",High:"عالي 🔴"};
+    $("#fwBody").className="";
+    $("#fwBody").innerHTML = `<div class="row"><div><div class="name">المستوى الحالي</div>
+      <div class="note">AntiAttack: ${i.AntiAttack==="1"?"مُفعّل 🛡️":"متوقف"}</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="sel" id="fwLevel">${Object.entries(lvls).map(([k,v])=>`<option value="${k}" ${i.Level===k?"selected":""}>${v}</option>`).join("")}</select>
+        <button class="btn btn-sm" onclick="setFw()">تطبيق</button></div></div>`;
+    const uf = await jget("/api/qos/urlfilter");
+    const ug = await jget("/api/qos/urlfilter_global");
+    const on = ug.instances[0]?.UrlFilterEnable==="1";
+    $("#urlBody").className="";
+    $("#urlBody").innerHTML = `<div class="row"><div><div class="name">تفعيل فلتر المواقع</div>
+      <div class="note">${uf.instances.length} قاعدة محفوظة</div></div>
+      <label class="switch"><input type="checkbox" id="swUF" ${on?"checked":""}><span class="slider"></span></label></div>
+      ${uf.instances.length?`<table style="margin-top:8px"><tr><th>الموقع</th><th></th></tr>${uf.instances.map(u=>`<tr><td class="mono">${esc(u.Url||u.Alias||u.Name)}</td>
+        <td style="text-align:left"><button class="btn btn-sm red" onclick="delUrl('${esc(u._InstID)}')">🗑️</button></td></tr>`).join("")}</table>`:'<div class="empty">لا مواقع محجوبة</div>'}
+      <div style="margin-top:13px;display:flex;gap:8px"><input class="txt" id="urlNew" placeholder="example.com" style="flex:1;max-width:260px">
+      <button class="btn btn-sm" onclick="addUrl()">➕ حجب</button></div>`;
+    $("#swUF").onchange = async el=>{
+      const r = await jpost("/api/qos/urlfilter_global",{action:"Apply",fields:{UrlFilterEnable:el.target.checked?"1":"0",UrlFilterTarget:"0"}});
+      toast(r.ok?(el.target.checked?"الفلتر شغال 🚫":"الفلتر متوقف"):"رفض: "+r.error,!r.ok);
+      if(!r.ok) el.target.checked=!el.target.checked;
+    };
   }catch(e){ $("#fwBody").textContent="خطأ: "+e.message; }
 }
-async function setFw(level){
-  const r = await jpost("/api/qos/firewall",{action:"Apply",fields:{Level:level, AntiAttack:"1"}});
-  toast(r.ok? "مستوى الحماية اتغير ✅":"رفض الراوتر: "+r.error, !r.ok);
-  loadSecurity();
+async function setFw(){
+  const r = await jpost("/api/qos/firewall",{action:"Apply",fields:{Level:$("#fwLevel").value,AntiAttack:"1"}});
+  toast(r.ok?"مستوى الحماية اتغير ✅":"رفض: "+r.error,!r.ok); loadSecurity();
+}
+async function addUrl(){
+  const url = $("#urlNew").value.trim();
+  if(!url) return;
+  const r = await jpost("/api/qos/urlfilter",{action:"Apply",instId:"-1",fields:{Name:"blocked",Url:url}});
+  if(r.ok){ toast("اتحجب "+url+" ✅"); loadSecurity(); } else toast("رفض: "+r.error,true);
+}
+async function delUrl(inst){
+  await jpost("/api/qos/urlfilter",{action:"Delete",instId:inst});
+  toast("اشالتلها"); loadSecurity();
 }
 
-// ================= SYSTEM =================
+// ==================== SYSTEM ====================
 async function loadSystem(){
   try{
     const info = await jget("/api/info");
     const i = info.info || {};
-    $("#sysInfo").className = "";
-    const rows = [["الموديل","ModelName"],["الفيروير","SoftwareVer"],["الهاردوير","HardwareVer"],
+    const rows = [["الموديل","ModelName"],["الفيرووير","SoftwareVer"],["الهاردوير","HardwareVer"],
       ["السيريال","SerialNumber"],["تاريخ البناء","VerDate"],["البت لودر","BootVer"]];
-    $("#sysInfo").innerHTML = rows.map(([ar,k])=> i[k] ? `<div class="row">
-      <div class="name">${ar}</div><div class="mono">${esc(String(i[k]).replace(/&#32;/g," "))}</div></div>` : "").join("");
+    $("#sysInfo").className="";
+    $("#sysInfo").innerHTML = rows.map(([ar,k])=> i[k]?`<div class="row"><div class="name">${ar}</div>
+      <div class="mono">${esc(String(i[k]).replace(/&#32;/g," "))}</div></div>`:"").join("");
+    $("#bakBody").className="";
+    $("#bakBody").innerHTML = `<div class="row"><div><div class="name">نسخة احتياطية</div>
+      <div class="note">تصدير كل الإعدادات (QoS، الحدود، الحجب، الأسماء) كملف</div></div>
+      <button class="btn btn-sm" onclick="doBackup()">💾 تنزيل</button></div>
+      <div class="row"><div><div class="name">إرجاع من نسخة</div>
+      <div class="note">يضيف القواعد الناقصة بس (من غير لمس اللي شغال)</div></div>
+      <label class="btn btn-sm ghost" style="display:inline-flex;align-items:center">📂 اختر ملف
+        <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="doRestore(this)"></label></div>`;
   }catch(e){ $("#sysInfo").textContent="خطأ: "+e.message; }
 }
+async function doBackup(){
+  const b = await jget("/api/backup");
+  const blob = new Blob([JSON.stringify(b.backup,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "router-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+  toast("النسخة اتنزلت ✅");
+}
+async function doRestore(inp){
+  const file = inp.files[0]; if(!file) return;
+  const backup = JSON.parse(await file.text());
+  const prev = await jpost("/api/restore",{backup,apply:false});
+  if(!confirm("هنرجاع "+prev.plan.length+" عنصر ناقص. أكمل؟")) return;
+  const r = await jpost("/api/restore",{backup,apply:true});
+  toast("اترجع "+(r.restored||0)+" من "+(r.planned||0)+" ✅");
+}
 function askReboot(){
-  if(confirm("متأكد؟ الراوتر هيعمل ريستارت وكل النت هيقطع لحد ٥ دقايق"))
-    jpost("/api/system/reboot").then(r=>{
-      toast(r.ok ? "الراوتر بيعمل ريستارت دلوقتي… استنى شوية" : "خطأ: "+r.error, !r.ok);
-    });
+  if(confirm("الراوتر هيقلب دلوقتي — النت هيقطع ~٥ دقايق. متأكد؟"))
+    jpost("/api/system/reboot").then(r=>toast(r.ok?"الراوتر بيقلب… 🔄":"خطأ: "+r.error,!r.ok));
 }
 function askReset(){
-  if(confirm("⚠️ آخر تحذير: كل الإعدادات هتتمسح نهائياً (الواي فاي، القيود، كل حاجة)! متأكد؟"))
-    jpost("/api/system/factory-reset").then(r=>{
-      toast(r.ok ? "باعود لإعدادات المصنع…" : "خطأ: "+r.error, !r.ok);
-    });
+  if(!confirm("⚠️ خطر: كل الإعدادات هتمسح. يعمل نسخة احتياطية الأول؟")) return;
+  if(confirm("متأكد فعلاً؟ Reset من المصنع!"))
+    jpost("/api/system/factory-reset").then(r=>toast(r.ok?"باعود للمصنع…":"خطأ: "+r.error,!r.ok));
 }
 
-// ================= MODAL / NAV =================
+// ==================== MODAL / NAV ====================
 function closeModal(){ $("#modal").classList.add("hidden"); }
 $("#modal").onclick = e=>{ if(e.target.id==="modal") closeModal(); };
-const LOADERS = {dash:loadDash, qos:()=>renderQos($$(".subnav button").find(b=>b.classList.contains("active")).dataset.q),
-  devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, system:loadSystem};
 function showView(name){
   $$("nav button").forEach(x=>x.classList.toggle("active", x.dataset.view===name));
   ["dash","qos","devices","wifi","lan","security","system"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==name));
-  LOADERS[name] && LOADERS[name]();
+  ({dash:()=>{loadDash();loadFeed();}, qos:()=>renderQos($$(".subnav button").find(b=>b.classList.contains("active")).dataset.q),
+   devices:loadDevices, wifi:loadWifi, lan:loadLan, security:loadSecurity, system:loadSystem}[name])?.();
 }
 $$("nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 
-checkStatus(); loadDash(); loadDevices();
-setInterval(checkStatus, 30000);
+// ==================== BOOT LOOP ====================
+(async function init(){
+  const ok = await boot();
+  if(ok){ loadDash(); loadFeed(); loadDevices(); }
+  setInterval(tickTraffic, 3000);
+  setInterval(async ()=>{
+    if(busy) return;
+    const s = await jget("/api/status").catch(()=>({ok:false}));
+    if(!s.ok) boot();
+  }, 20000);
+  setInterval(()=>{ const v=$$("nav button").find(b=>b.classList.contains("active"))?.dataset.view;
+    if(v==="dash"){loadDash();} if(v==="devices") loadDevices(); }, 30000);
+})();
 </script>
 </body>
 </html>

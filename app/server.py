@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Router Control — local API server for ZTE ZXHN H168N V3.5 (protocol fully
-reverse-engineered + live-verified, see QOS_REVERSE_ENGINEERING.md).
-Serves ui/index.html and a JSON API that talks to the real router.
-Port: 8766 (8765 is used by the user's AII app)."""
+"""Router Control — local API server for ZTE ZXHN H168N V3.5.
+Reverse-engineered protocol, every write live-verified (see docs/).
+Serves ui/index.html + JSON API. Port 8766. Credentials: %APPDATA%\\RouterControl\\config.json
+"""
 import json
 import os
 import re
@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "scripts"))
@@ -19,13 +19,14 @@ from zte_client import ZteClient
 ROOT = _HERE
 UI_DIR = os.path.join(os.path.dirname(ROOT), "ui")
 LOCK = threading.RLock()
+STATE_DIR = os.path.join(os.environ.get("APPDATA", _HERE), "RouterControl")
+NAMES_FILE = os.path.join(STATE_DIR, "names.json")
+OPS_FILE = os.path.join(STATE_DIR, "opslog.json")
 
 client = ZteClient()
-_cache = {}          # key -> {"t": ts, "data": ...}
-CACHE_TTL = 3.0      # seconds
+_cache = {}
+CACHE_TTL = 2.5
 
-
-# ---------------------------------------------------------------- sections
 SECTIONS = {
     "basic": ("Internet_QoS_Basic_t.lp", "Internet_AdminQos_BasicCfg_lua.lua"),
     "classification": ("Internet_QoS_type_t.lp", "Internet_QoS_type_lua.lua"),
@@ -44,8 +45,9 @@ SECTIONS = {
     "macfilter_policy": ("Localnet_WlanAdvanced_t.lp", "Localnet_WlanAdvanced_MACFilterACLPolicy_lua.lua"),
 }
 WIFI_PAGE = "Localnet_WlanBasicUser_t.lp"
-WIFI_CONF_EP = "Localnet_WlanBasicAd_WLANSSIDConf_EncryOption_lua.lua"
+WIFI_CONF_EP = "Localnet_WlanBasicAd_WlanBasicAdConf_lua.lua"
 WIFI_ONOFF_EP = "Localnet_WlanBasicAd_OnOff_lua.lua"
+WIFI_SSID_EP = "Localnet_WlanBasicAd_WLANSSIDConf_EncryOption_lua.lua"
 WAN_PAGE = "Internet_AdminInternetStatus_DSL_t.lp"
 WAN_EP = "Internet_Internet_lua.lua?TypeUplink=1&pageType=1"
 DSL_EP = "internet_dsl_interface_lua.lua"
@@ -70,6 +72,32 @@ def cached(key, fn):
     return data
 
 
+def invalidate():
+    _cache.clear()
+
+
+def _load_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+
+
+def oplog(action, detail):
+    """Persist a small ops log for the UI activity feed."""
+    log = _load_json(OPS_FILE, [])
+    log.insert(0, {"t": int(time.time()), "action": action, "detail": detail})
+    _save_json(OPS_FILE, log[:50])
+
+
+# ---------------------------------------------------------------- sections
 def _read(section):
     lp, ep = SECTIONS[section]
     xml = client.read_endpoint(lp, ep)
@@ -90,207 +118,444 @@ def api_write(section, payload):
         fields.setdefault("_InstID", str(inst_id))
     xml = client.write(lp, ep, fields, if_action=action)
     ok, err = client.check_ok(xml)
-    _cache.clear()
+    invalidate()
     fresh = _read(section)
-    # The router sometimes reports FAIL yet performs the op — read-back is the truth
+    oplog(f"{section}:{action}", ",".join(sorted(fields)[:4]))
     return {"ok": ok and fresh["ok"], "error": err, "instances": fresh["instances"]}
+
+
+# ---------------------------------------------------------------- devices
+def api_devices():
+    def fn():
+        names = _load_json(NAMES_FILE, {})
+        devs = []
+        for lp, ep, kind in DEV_EPS:
+            xml = client.read_endpoint(lp, ep)
+            for inst in client.parse_instances(xml):
+                if "MACAddress" in inst:
+                    mac = inst.get("MACAddress", "").lower()
+                    devs.append({
+                        "name": names.get(mac) or inst.get("HostName") or "(جهاز غير معروف)",
+                        "auto": inst.get("HostName") or "",
+                        "custom": bool(names.get(mac)),
+                        "ip": inst.get("IPAddress", ""),
+                        "mac": mac,
+                        "type": kind,
+                        "ssid": inst.get("AliasName", ""),
+                    })
+        # cross-mark blocked devices
+        try:
+            pol = _read("macfilter_policy")
+            rules = _read("macfilter")
+            banned = {r.get("MACAddress", "").lower() for r in rules["instances"]}
+            policy = {p["_InstID"]: p.get("ACLPolicy") for p in pol["instances"]}
+            any_ban = "Ban" in policy.values()
+            for d in devs:
+                d["blocked"] = bool(any_ban and d["mac"] in banned)
+        except Exception:
+            for d in devs:
+                d["blocked"] = False
+        return {"ok": True, "devices": devs}
+    return cached("devices", fn)
+
+
+def api_set_name(mac, name):
+    names = _load_json(NAMES_FILE, {})
+    if name:
+        names[mac.lower()] = name
+    else:
+        names.pop(mac.lower(), None)
+    _save_json(NAMES_FILE, names)
+    invalidate()
+    oplog("rename", mac)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- traffic monitor
+_traffic_state = {"prev": None, "prev_t": 0.0, "series": []}
+
+
+def _totals():
+    tot = {"wifi_rx": 0, "wifi_tx": 0, "lan_rx": 0, "lan_tx": 0}
+    xml = client.read_endpoint("Localnet_LocalnetStatusUser_t.lp", "wlanStatus_lua.lua")
+    for i in client.parse_instances(xml):
+        tot["wifi_rx"] += int(i.get("TotalBytesReceived") or 0)
+        tot["wifi_tx"] += int(i.get("TotalBytesSent") or 0)
+    xml = client.read_endpoint("Localnet_LocalnetStatusUser_t.lp", "lanStatus_lua.lua")
+    for i in client.parse_instances(xml):
+        tot["lan_rx"] += int(i.get("BytesReceived") or 0)
+        tot["lan_tx"] += int(i.get("BytesSent") or 0)
+    return tot
+
+
+def api_traffic():
+    now = time.time()
+    t = _totals()
+    out = dict(t)
+    out["dsl_rate"] = 0
+    try:
+        dsl = client.parse_instances(client.read_endpoint(WAN_PAGE, DSL_EP))
+        if dsl:
+            out["dsl_rate"] = int(dsl[0].get("Downstream_current_rate") or 0) * 1000
+            out["dsl_up"] = int(dsl[0].get("Upstream_current_rate") or 0) * 1000
+            out["up_time"] = int(dsl[0].get("Showtime_start") or 0)
+    except Exception:
+        pass
+    prev, pt = _traffic_state["prev"], _traffic_state["prev_t"]
+    dt = max(now - pt, 0.5)
+    rx_rate = tx_rate = 0
+    if prev:
+        rx = max(0, (t["wifi_rx"] + t["lan_rx"]) - (prev["wifi_rx"] + prev["lan_rx"]))
+        tx = max(0, (t["wifi_tx"] + t["lan_tx"]) - (prev["wifi_tx"] + prev["lan_tx"]))
+        rx_rate, tx_rate = rx * 8 / dt, tx * 8 / dt
+    _traffic_state["prev"], _traffic_state["prev_t"] = t, now
+    _traffic_state["series"].append([round(rx_rate), round(tx_rate)])
+    _traffic_state["series"] = _traffic_state["series"][-60:]
+    out.update({"rx_rate": int(rx_rate), "tx_rate": int(tx_rate),
+                "series": _traffic_state["series"], "ok": True})
+    return out
 
 
 # ---------------------------------------------------------------- wifi
 def wifi_aps():
     def fn():
-        xml = client.read_endpoint(WIFI_PAGE, WIFI_CONF_EP)
+        xml = client.read_endpoint(WIFI_PAGE, WIFI_SSID_EP)
         ok, err = client.check_ok(xml)
         insts = client.parse_instances(xml) if ok else []
-        aps, psks = [], {}
-        for i in insts:
-            if re.match(r"^DEV\.WIFI\.AP\d+$", i["_InstID"]):
-                aps.append(i)
-            elif ".PSK" in i["_InstID"]:
-                psks[i["_InstID"]] = i
-        return {"ok": ok, "error": err, "aps": aps, "psks": psks}
+        aps = [i for i in insts if re.match(r"^DEV\.WIFI\.AP\d+$", i["_InstID"])]
+        return {"ok": ok, "error": err, "aps": aps}
     return cached("wifi:aps", fn)
 
 
 def wifi_radio():
     def fn():
-        xml = client.read_endpoint(WIFI_PAGE, WIFI_ONOFF_EP)
-        ok, err = client.check_ok(xml)
-        insts = [i for i in client.parse_instances(xml) if i["_InstID"] == "DEV.WIFI.RD1"]
-        return {"ok": ok, "error": err, "radio": insts[0] if insts else {}}
+        insts = client.parse_instances(client.read_endpoint(WIFI_PAGE, WIFI_ONOFF_EP))
+        radio = [i for i in insts if i["_InstID"] == "DEV.WIFI.RD1"]
+        return radio[0] if radio else {}
     return cached("wifi:radio", fn)
+
+
+def wifi_conf():
+    def fn():
+        insts = client.parse_instances(client.read_endpoint(WIFI_PAGE, WIFI_CONF_EP))
+        wl = [i for i in insts if i["_InstID"] == "DEV.WIFI.RD1"]
+        return wl[0] if wl else {}
+    return cached("wifi:conf", fn)
 
 
 def api_wifi():
     out = wifi_aps()
-    out["radio"] = wifi_radio()["radio"]
+    out["radio"] = wifi_radio()
+    out["conf"] = wifi_conf()
     return out
 
 
 def api_wifi_save(ap_id, fields):
-    """Edit one AP: ESSID rename, hide toggle, security, password.
-    Password changes need _InstID_PSK + _PSKCONIG=Y (verified on live fw)."""
     aps = [a for a in wifi_aps()["aps"] if a["_InstID"] == ap_id]
     if not aps:
         return {"ok": False, "error": "AP not found"}
     ap = aps[0]
     body = {
         "_InstID": ap["_InstID"],
-        "Enable": ap.get("Enable", "1"),
+        "Enable": fields.get("Enable", ap.get("Enable", "1")),
         "ESSID": fields.get("ESSID", ap.get("ESSID", "")),
         "ESSIDHideEnable": str(fields.get("ESSIDHideEnable", ap.get("ESSIDHideEnable", "0"))),
         "BeaconType": fields.get("BeaconType", ap.get("BeaconType", "WPAand11i")),
     }
     pw = fields.get("KeyPassphrase")
-    if pw:  # includes changing password
+    if pw:
+        if len(pw) < 8:
+            return {"ok": False, "error": "الباسورد أقل من 8 حروف — الراوتر سيرفض"}
         body["_InstID_PSK"] = ap["_InstID"] + ".PSK1"
         body["_PSKCONIG"] = "Y"
         body["KeyPassphrase"] = pw
-    xml = client.write(WIFI_PAGE, WIFI_CONF_EP, body, if_action="Apply")
+    xml = client.write(WIFI_PAGE, WIFI_SSID_EP, body, if_action="Apply")
     ok, err = client.check_ok(xml)
-    _cache.clear()
+    invalidate()
     fresh = [a for a in wifi_aps()["aps"] if a["_InstID"] == ap_id]
-    changed = fresh and fresh[0]["ESSID"] == body["ESSID"] and \
-        fresh[0]["ESSIDHideEnable"] == body["ESSIDHideEnable"]
-    return {"ok": ok and bool(changed), "error": err, "ap": fresh[0] if fresh else {}}
+    changed = bool(fresh) and fresh[0]["ESSID"] == body["ESSID"]
+    oplog("wifi-save", ap_id)
+    return {"ok": ok and changed, "error": err, "ap": fresh[0] if fresh else {}}
 
 
 def api_wifi_password(ap_id):
-    """Read the CURRENT wifi password (firmware GetPassword action)."""
-    xml = client.write(WIFI_PAGE, WIFI_CONF_EP,
+    xml = client.write(WIFI_PAGE, WIFI_SSID_EP,
                        {"_InstID_PASS": ap_id, "PASSTYPE": "PSK"}, if_action="GetPassword")
     m = re.search(r"<ParaName>KeyPassphrase</ParaName>\s*<ParaValue>(.*?)</ParaValue>", xml, re.S)
     ok, err = client.check_ok(xml)
     return {"ok": ok, "error": err, "password": m.group(1) if m else ""}
 
 
-def api_wifi_radio(status):
-    body = {"RadioStatus": "1" if status else "0", "_InstID": "DEV.WIFI.RD1",
+def api_wifi_radio(on):
+    body = {"RadioStatus": "1" if on else "0", "_InstID": "DEV.WIFI.RD1",
             "Band": "2.4GHz", "Standard": "b,g,n", "BandWidth": "20MHz",
             "AutoChannelEnabled": "1", "Channel": "1"}
     xml = client.write(WIFI_PAGE, WIFI_ONOFF_EP, body, if_action="Apply")
     ok, err = client.check_ok(xml)
-    _cache.clear()
-    return {"ok": ok, "error": err, "radio": wifi_radio()["radio"]}
+    invalidate()
+    oplog("wifi-radio", "on" if on else "off")
+    return {"ok": ok, "error": err, "radio": wifi_radio()}
 
 
-# ---------------------------------------------------------------- devices
-def api_devices():
-    def fn():
-        devs = []
-        for lp, ep, kind in DEV_EPS:
-            xml = client.read_endpoint(lp, ep)
-            for inst in client.parse_instances(xml):
-                if "MACAddress" in inst:
-                    devs.append({
-                        "name": inst.get("HostName") or "(جهاز غير معروف)",
-                        "ip": inst.get("IPAddress", ""),
-                        "mac": inst.get("MACAddress", "").lower(),
-                        "type": kind,
-                        "ssid": inst.get("AliasName", ""),
-                    })
-        return {"ok": True, "devices": devs}
-    return cached("devices", fn)
+def api_wifi_channel(channel, auto):
+    conf = wifi_conf()
+    body = {
+        "_InstID": "DEV.WIFI.RD1",
+        "Band": conf.get("Band", "2.4GHz"),
+        "Standard": conf.get("Standard", "b,g,n"),
+        "BandWidth": conf.get("BandWidth", "20MHz"),
+        "AutoChannelEnabled": "1" if auto else "0",
+        "Channel": str(channel),
+        "CountryCode": conf.get("CountryCode", "EGI"),
+    }
+    xml = client.write(WIFI_PAGE, WIFI_CONF_EP, body, if_action="Apply")
+    ok, err = client.check_ok(xml)
+    invalidate()
+    oplog("wifi-channel", f"{channel} auto={int(bool(auto))}")
+    return {"ok": ok, "error": err, "conf": wifi_conf()}
 
 
-# ---------------------------------------------------------------- status / wan
+# ---------------------------------------------------------------- device control
+def api_block(mac, block):
+    """Ban/Allow a WiFi MAC via ACL: rule list + policy per AP. Reversible."""
+    rules = _read("macfilter")["instances"]
+    existing = [r for r in rules if r.get("MACAddress", "").lower() == mac]
+
+    def set_policy(target):
+        """The ACL-policy endpoint requires the FULL form body (_InstNum + every
+        _InstID_i/ACLPolicy_i row) — partial posts answer 404/SessionTimeout.
+        (Live-verified 2026-09.)"""
+        invalidate()
+        insts = _read("macfilter_policy")["instances"]
+        fields = {"_InstNum": len(insts)}
+        for i, inst in enumerate(insts):
+            cur = inst.get("ACLPolicy", "Disabled")
+            fields[f"_InstID_{i}"] = inst["_InstID"]
+            fields[f"ACLPolicy_{i}"] = target if i == 0 else cur
+        client.write(*SECTIONS["macfilter_policy"], if_action="Apply", fields=fields)
+        time.sleep(0.5)
+        invalidate()
+        pol = {p["_InstID"]: p.get("ACLPolicy") for p in _read("macfilter_policy")["instances"]}
+        return pol.get("DEV.WIFI.AP1")
+
+    if block:
+        if not existing:
+            client.write(*SECTIONS["macfilter"], if_action="Apply",
+                         fields={"_InstID": "-1", "MACAddress": mac, "Interface": "DEV.WIFI.AP1"})
+            time.sleep(0.5)
+            invalidate()
+        ok_pol = set_policy("Ban") == "Ban"
+        invalidate()
+        left = [r for r in _read("macfilter")["instances"] if r.get("MACAddress", "").lower() == mac]
+        ok = bool(left) and ok_pol
+        err = "SUCC" if ok else "لم يتأكد الحظر"
+    else:
+        for r0 in existing:
+            client.write(*SECTIONS["macfilter"], if_action="Delete",
+                         fields={"_InstID": r0["_InstID"]})
+        time.sleep(0.5)
+        invalidate()
+        left = [r for r in _read("macfilter")["instances"] if r.get("MACAddress", "").lower() == mac]
+        if not left:
+            pol = {p["_InstID"]: p.get("ACLPolicy") for p in _read("macfilter_policy")["instances"]}
+            if pol.get("DEV.WIFI.AP1") == "Ban":
+                set_policy("Disabled")
+        ok = not left
+        err = "SUCC" if ok else "لم يتأكد فك الحظر"
+    invalidate()
+    oplog("block" if block else "unblock", mac)
+    return {"ok": ok, "error": err}
+
+
+PRESETS = {
+    "gaming": {"label": "أونلاين — 2M", "bps": 2000000},
+    "streaming": {"label": "ستريمنج — 15M", "bps": 15000000},
+    "homework": {"label": "مذاكرة — 8M", "bps": 8000000},
+    "free": {"label": "بدون حد (حذف القاعدة)", "bps": None},
+}
+
+
+def api_preset(mac, preset):
+    rules = _read("downlimit_rules")["instances"]
+    same = [r for r in rules if r.get("DestMAC", "").lower() == mac]
+    p = PRESETS.get(preset)
+    if not p:
+        return {"ok": False, "error": "preset unknown"}
+    if p["bps"] is None:
+        for r in same:
+            client.write(*SECTIONS["downlimit_rules"], if_action="Delete",
+                         fields={"_InstID": r["_InstID"]})
+        ok = not [r for r in _read("downlimit_rules")["instances"]
+                  if r.get("DestMAC", "").lower() == mac]
+        oplog("preset-free", mac)
+        return {"ok": ok, "error": "SUCC" if ok else "FAIL"}
+    bps = str(p["bps"])
+    if same:
+        r = client.write(*SECTIONS["downlimit_rules"], if_action="Apply",
+                         fields={"_InstID": same[0]["_InstID"], "Alias": p["label"],
+                                 "Enable": "1", "ManaType": "mac", "DestMAC": mac,
+                                 "IPDest": "0.0.0.0", "IPDestMask": "0.0.0.0",
+                                 "DestDevIF": same[0].get("DestDevIF", "DEV.BRIDGING.BR1.BRPORT2"),
+                                 "DownBandwidth": bps})
+    else:
+        r = client.write(*SECTIONS["downlimit_rules"], if_action="Apply",
+                         fields={"_InstID": "-1", "Alias": p["label"], "Enable": "1",
+                                 "ManaType": "mac", "DestMAC": mac, "IPDest": "0.0.0.0",
+                                 "IPDestMask": "0.0.0.0",
+                                 "DestDevIF": "DEV.BRIDGING.BR1.BRPORT2",
+                                 "DownBandwidth": bps})
+    ok = client.check_ok(r)[0]
+    invalidate()
+    oplog("preset:" + preset, mac)
+    return {"ok": ok, "error": client.check_ok(r)[1]}
+
+
+# ---------------------------------------------------------------- backup / restore
+BACKUP_SECTIONS = ["basic", "classification", "downlimit_global", "downlimit_rules",
+                   "policing", "firewall", "urlfilter", "urlfilter_global", "macfilter"]
+
+
+def api_backup():
+    data = {"meta": {"app": "RouterControl", "t": int(time.time())}}
+    for s in BACKUP_SECTIONS:
+        try:
+            data[s] = _read(s)["instances"]
+        except Exception:
+            data[s] = None
+    try:
+        data["wifi"] = wifi_aps()["aps"]
+    except Exception:
+        data["wifi"] = None
+    data["names"] = _load_json(NAMES_FILE, {})
+    return {"ok": True, "backup": data}
+
+
+def api_restore(backup, apply_it):
+    """Preview diff; when apply_it, re-create downlimit rules, urlfilter rules,
+    QoS classification and global toggles. MAC rules replaced wholesale."""
+    plan = []
+    if backup.get("downlimit_rules"):
+        cur = _read("downlimit_rules")["instances"]
+        cur_ids = {r.get("Alias") for r in cur}
+        for rule in backup["downlimit_rules"]:
+            if rule.get("Alias") in cur_ids:
+                continue
+            plan.append(("downlimit", {k: rule.get(k) for k in
+                        ("Alias", "Enable", "ManaType", "DestMAC", "DestDevIF",
+                         "DownBandwidth", "IPDest", "IPDestMask") if k in rule}))
+    if backup.get("urlfilter"):
+        cur = _read("urlfilter")["instances"]
+        have = {r.get("Url") for r in cur}
+        for u in backup["urlfilter"]:
+            if u.get("Url") in have:
+                continue
+            plan.append(("urlfilter", {"Name": u.get("Alias") or "restored", "Url": u.get("Url")}))
+    if not apply_it:
+        return {"ok": True, "plan": plan}
+    done = 0
+    for kind, fields in plan:
+        if kind == "downlimit":
+            fields.setdefault("_InstID", "-1")
+            r = client.write(*SECTIONS["downlimit_rules"], if_action="Apply", fields=fields)
+        else:
+            r = client.write(*SECTIONS["urlfilter"], if_action="Apply",
+                             fields={"_InstID": "-1", **fields})
+        if client.check_ok(r)[0]:
+            done += 1
+    invalidate()
+    oplog("restore", f"{done}/{len(plan)}")
+    return {"ok": True, "restored": done, "planned": len(plan)}
+
+
+# ---------------------------------------------------------------- wan / system
 def api_wan():
     def fn():
-        xml = client.read_endpoint(WAN_PAGE, WAN_EP)
-        ok, err = client.check_ok(xml)
-        insts = client.parse_instances(xml) if ok else []
-        dsl = client.parse_instances(client.read_endpoint(WAN_PAGE, DSL_EP))
+        insts = client.parse_instances(client.read_endpoint(WAN_PAGE, WAN_EP))
         wan = insts[0] if insts else {}
+        dsl = client.parse_instances(client.read_endpoint(WAN_PAGE, DSL_EP))
         d = dsl[0] if dsl else {}
-        return {"ok": ok, "error": err,
+        return {"ok": True,
                 "wan": {k: wan.get(k) for k in ("ConnStatus", "ConnStatus6", "UpTime", "UserName",
-                                                "TransType", "WANCName", "ConnError") if k in wan},
+                                                "TransType", "ConnError", "IPAddress", "DNS1") if k in wan},
                 "dsl": {k: d.get(k) for k in ("Status", "Module_type", "CurrentProfile",
-                                              "Downstream_current_rate", "Upstream_max_rate",
-                                              "Downstream_noise_margin", "Downstream_attenuation",
-                                              "Upstream_noise_margin", "Upstream_power",
-                                              "DownCrc_errors", "UpCrc_errors", "Showtime_start") if k in d}}
+                                              "Downstream_current_rate", "Upstream_current_rate",
+                                              "Downstream_max_rate", "Downstream_noise_margin",
+                                              "Downstream_attenuation", "Upstream_noise_margin",
+                                              "DownCrc_errors", "UpCrc_errors", "Showtime_start",
+                                              "Link_retrain") if k in d}}
     return cached("wan", fn)
 
 
 def api_dashboard():
     def fn():
-        out = {}
+        out = {"ok": True}
         b = api_read("basic")
         out["qos_enabled"] = b["instances"][0].get("Enable") if b["instances"] else None
         dg = api_read("downlimit_global")
         out["downlimit"] = dg["instances"][0] if dg["instances"] else {}
-        d = api_devices()
-        out["devices_count"] = len(d["devices"])
+        out["devices_count"] = len(api_devices()["devices"])
         w = api_wan()
-        out["wan"] = w["wan"]
-        out["dsl"] = {k: w["dsl"].get(k) for k in ("Status", "Downstream_current_rate", "CurrentProfile")}
+        out["wan"], out["dsl"] = w["wan"], w["dsl"]
         info = client.parse_instances(client.read_endpoint(INFO_PAGE, INFO_EP))
         out["device_info"] = info[0] if info else {}
-        xml = client.read_endpoint("Internet_sntp_t.lp", "Internet_sntp_lua.lua")
-        m = re.search(r"<ParaName>CurrentLocalTime</ParaName>\s*<ParaValue>(.*?)</ParaValue>", xml)
-        out["router_time"] = m.group(1) if m else None
-        out["ok"] = True
+        tr = _traffic_state["series"]
+        out["net"] = tr[-1] if tr else [0, 0]
         return out
     return cached("dash", fn)
 
 
-# ---------------------------------------------------------------- system
 def api_lan_status():
     def fn():
         xml = client.read_endpoint("Localnet_LocalnetStatusUser_t.lp", "lanStatus_lua.lua")
-        ok, err = client.check_ok(xml)
         ports = []
-        for i in (client.parse_instances(xml) if ok else []):
+        for i in client.parse_instances(xml):
             if "AliasName" in i:
                 ports.append({"name": i["AliasName"], "status": i.get("Status", ""),
                               "speed": i.get("LinkSpeed", "?"), "duplex": i.get("LinkDuplex", ""),
                               "rx": i.get("BytesReceived", "0"), "tx": i.get("BytesSent", "0")})
-        return {"ok": ok, "error": err, "ports": ports}
+        return {"ok": True, "ports": ports}
     return cached("lanstatus", fn)
 
 
 def api_dhcp_leases():
     def fn():
         xml = client.read_endpoint("Localnet_LanMgrIpv4_t.lp", "Localnet_LanMgrIpv4_DHCPHostInfo_lua.lua")
-        ok, err = client.check_ok(xml)
+        names = _load_json(NAMES_FILE, {})
         leases = []
-        for i in (client.parse_instances(xml) if ok else []):
-            leases.append({"host": i.get("HostName") or "(غير معروف)",
-                           "ip": i.get("IPAddr", ""),
-                           "mac": i.get("MACAddr", "").lower(),
-                           "port": i.get("PhyPortName", ""),
-                           "expires": i.get("ExpiredTime", "")})
-        return {"ok": ok, "error": err, "leases": leases}
+        for i in client.parse_instances(xml):
+            mac = i.get("MACAddr", "").lower()
+            leases.append({"host": names.get(mac) or i.get("HostName") or "(غير معروف)",
+                           "ip": i.get("IPAddr", ""), "mac": mac,
+                           "port": i.get("PhyPortName", ""), "expires": i.get("ExpiredTime", "")})
+        return {"ok": True, "leases": leases}
     return cached("dhcpleases", fn)
 
 
 def api_reboot():
     xml = client.write(SYS_PAGE, SYS_EP, {}, if_action="Restart")
     ok, err = client.check_ok(xml)
-    return {"ok": ok, "error": err, "note": "الراوتر بيعمل ريستارت دلوقتي (٥ دقايق تقريباً)"}
+    oplog("reboot", "")
+    return {"ok": ok, "error": err}
 
 
 def api_factory_reset():
     xml = client.write(SYS_PAGE, SYS_EP, {}, if_action="Restore")
     ok, err = client.check_ok(xml)
-    return {"ok": ok, "error": err, "note": "باعود لإعدادات المصنع — كل الإعدادات هتتمسح"}
+    return {"ok": ok, "error": err}
 
 
 def api_device_info():
     def fn():
-        xml = client.read_endpoint(INFO_PAGE, INFO_EP)
-        ok, err = client.check_ok(xml)
-        insts = client.parse_instances(xml) if ok else []
-        return {"ok": ok, "error": err, "info": insts[0] if insts else {}}
+        insts = client.parse_instances(client.read_endpoint(INFO_PAGE, INFO_EP))
+        return {"ok": True, "info": insts[0] if insts else {}}
     return cached("info", fn)
 
 
-# ---------------------------------------------------------------- HTTP layer
-ROUTES_GET = {}
-ROUTES_POST = {}
+def api_ops():
+    return {"ok": True, "log": _load_json(OPS_FILE, [])}
 
 
+# ---------------------------------------------------------------- HTTP
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -301,7 +566,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
-        # CORS: allow the GitHub Pages copy of the UI to drive this local server
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -327,36 +591,28 @@ class Handler(BaseHTTPRequestHandler):
                 with open(os.path.join(UI_DIR, "index.html"), "rb") as f:
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             if u.path == "/api/login":
-                # Login attempts OUTSIDE the global lock: exactly one attempt,
-                # result + reason returned. Never called by UI polling loops.
                 with LOCK:
                     if client.logged_in:
                         return self._send(200, {"ok": True, "router": "ZXHN H168N V3.5"})
                     blocked = time.time() < getattr(client, "_login_blocked_until", 0)
                     if blocked:
-                        return self._send(200, {"ok": False, "router": "ZXHN H168N V3.5",
-                                                "blocked": True})
+                        return self._send(200, {"ok": False, "blocked": True})
                     ok = client.login()
-                    if ok:
-                        return self._send(200, {"ok": True, "router": "ZXHN H168N V3.5"})
-                    return self._send(200, {"ok": False, "router": "ZXHN H168N V3.5",
-                                            "blocked": time.time() < getattr(client, "_login_blocked_until", 0),
-                                            "error": "login failed"})
+                    return self._send(200, {"ok": ok, "router": "ZXHN H168N V3.5"})
             with LOCK:
+                q = parse_qs(u.query)
                 if u.path == "/api/status":
-                    # NO login attempt here — status only. Login happens lazily
-                    # on real data requests so we never hammer the router.
-                    return self._send(200, {"ok": bool(client.logged_in),
-                                            "router": "ZXHN H168N V3.5"})
+                    return self._send(200, {"ok": bool(client.logged_in), "router": "ZXHN H168N V3.5"})
                 if u.path == "/api/dashboard":
                     return self._send(200, api_dashboard())
                 if u.path == "/api/devices":
                     return self._send(200, api_devices())
+                if u.path == "/api/traffic":
+                    return self._send(200, api_traffic())
                 if u.path == "/api/wifi":
                     return self._send(200, api_wifi())
                 if u.path == "/api/wifi/password":
-                    ap = u.query or "DEV.WIFI.AP1"
-                    return self._send(200, api_wifi_password(ap))
+                    return self._send(200, api_wifi_password((q.get("ap") or ["DEV.WIFI.AP1"])[0]))
                 if u.path == "/api/wan":
                     return self._send(200, api_wan())
                 if u.path == "/api/lanstatus":
@@ -365,6 +621,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, api_dhcp_leases())
                 if u.path == "/api/info":
                     return self._send(200, api_device_info())
+                if u.path == "/api/backup":
+                    return self._send(200, api_backup())
+                if u.path == "/api/ops":
+                    return self._send(200, api_ops())
                 if u.path.startswith("/api/qos/"):
                     sec = u.path.rsplit("/", 1)[-1]
                     if sec not in SECTIONS:
@@ -388,6 +648,16 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, api_wifi_save(payload.get("apId"), payload.get("fields", {})))
                 if u.path == "/api/wifi/radio":
                     return self._send(200, api_wifi_radio(bool(payload.get("on"))))
+                if u.path == "/api/wifi/channel":
+                    return self._send(200, api_wifi_channel(payload.get("channel", 1), payload.get("auto", True)))
+                if u.path == "/api/devices/name":
+                    return self._send(200, api_set_name(payload.get("mac", ""), payload.get("name", "")))
+                if u.path == "/api/devices/block":
+                    return self._send(200, api_block(payload.get("mac", "").lower(), bool(payload.get("block"))))
+                if u.path == "/api/devices/preset":
+                    return self._send(200, api_preset(payload.get("mac", "").lower(), payload.get("preset")))
+                if u.path == "/api/restore":
+                    return self._send(200, api_restore(payload.get("backup", {}), bool(payload.get("apply"))))
                 if u.path == "/api/system/reboot":
                     return self._send(200, api_reboot())
                 if u.path == "/api/system/factory-reset":

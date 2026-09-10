@@ -92,9 +92,13 @@ class ZteClient:
     # ---- token handling -------------------------------------------------
     def tokens(self, html: str) -> dict:
         toks = {}
-        m = re.search(r'var _sessionTmpToken = "((?:\\x[0-9a-fA-F]{2})+)"', html)
-        if m:
-            toks["sessionTmpToken"] = unescape_zte(m.group(1))
+        # The page assigns _sessionTmpToken several times (var decl at top,
+        # plain re-assignments lower). The JS-effective value is the LAST
+        # assignment in document order, regardless of quote style.
+        assign = re.compile(r"(?:var\s+)?_sessionTmpToken\s*=\s*['\"]((?:\\x[0-9a-fA-F]{2})+)['\"]")
+        occ = [(m.start(), unescape_zte(m.group(1))) for m in assign.finditer(html)]
+        if occ:
+            toks["sessionTmpToken"] = max(occ, key=lambda x: x[0])[1]
         m = re.search(r"_sessionTmpToken = '((?:\\x[0-9a-fA-F]{2})+)'", html)
         if m:
             toks["langSwitchToken"] = unescape_zte(m.group(1))
@@ -104,6 +108,9 @@ class ZteClient:
         return toks
 
     def write_token(self, html: str) -> str:
+        """langSwitchToken first — that ordering is what every verified write on
+        this firmware used. (ACL-policy endpoint additionally needs the FULL
+        form body: _InstNum + all _InstID_i/ACLPolicy_i rows.)"""
         t = self.tokens(html)
         return t.get("langSwitchToken") or t.get("sessionTmpToken") or t.get("loginFormLiteral") or ""
 

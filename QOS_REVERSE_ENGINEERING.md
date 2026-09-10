@@ -118,3 +118,19 @@ Content-Type: application/x-www-form-urlencoded
 IF_ACTION=Apply&Enable=0&_sessionTOKEN=123344027765338325179041
 → <IF_ERRORSTR>SUCC</IF_ERRORSTR> … read-back Enable=0 … restore Enable=1 → SUCC
 ```
+
+## ACL / MAC filter (WLAN) — SOLVED (live-verified)
+EPs: `Localnet_WlanAdvanced_MACFilterRule_lua.lua` (rules) +
+`Localnet_WlanAdvanced_MACFilterACLPolicy_lua.lua` (per-SSID policy).
+The policy endpoint REJECTS partial posts (404 with hidden SessionTimeout) — it
+needs the **full form body** exactly as InitialPostData builds it:
+`IF_ACTION=Apply&_InstNum=4&_InstID_0=DEV.WIFI.AP1&ACLPolicy_0=Ban&_InstID_1=DEV.WIFI.AP2&ACLPolicy_1=Disabled&...`
+- ACLPolicy per SSID: Disabled | Ban (blacklist) | Allow (whitelist).
+- Rules: MACAddress (responses normalize to lowercase) + Interface=DEV.WIFI.APn.
+- Device block = add rule + policy Ban (both live-verified, reversible).
+
+## Per-page token note
+Inner .lp pages render `_sessionTmpToken` multiple times (var decl + plain
+re-assignments). dataPost() uses the page-global JS variable = the LAST
+assignment in document order. Using an earlier one → 404 with hidden
+SessionTimeout on strict pages (e.g. WlanAdvanced).
