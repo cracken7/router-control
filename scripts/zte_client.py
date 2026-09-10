@@ -225,7 +225,11 @@ class ZteClient:
         out = []
         for inst in re.findall(r"<Instance>(.*?)</Instance>", xml, re.S):
             pairs = re.findall(r"<ParaName>(.*?)</ParaName>\s*<ParaValue>(.*?)</ParaValue>", inst, re.S)
-            d = {k.strip(): v.strip() for k, v in pairs}
+            d = {}
+            for k, v in pairs:
+                # decode common numeric entities the firmware emits (&#32; = space)
+                v = re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))), v)
+                d[k.strip()] = v.strip()
             if d:
                 out.append(d)
         return out

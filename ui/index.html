@@ -215,6 +215,7 @@ select.sel{background:rgba(0,0,0,.42);border:1px solid var(--line);color:var(--t
       <div class="row"><div><div class="name">سجل العمليات</div><div class="note">كل التغييرات اللي حصلت على الراوتر</div></div>
         <button class="btn btn-sm ghost" onclick="openFeed()">عرض 📜</button></div>
     </div>
+    <div class="card" style="animation-delay:.18s" id="ctlCard"><h2>🎛️ المخنّقون والمحظورون الآن</h2><div id="ctlBody" class="load">جارٍ الحساب</div></div>
     <div class="card" style="animation-delay:.2s"><h2>🕒 الأحداث الأخيرة</h2><div id="feedMini" class="feed"></div></div>
   </section>
 
@@ -375,7 +376,8 @@ function setConn(ok){
 }
 async function loadDash(){
   try{
-    const d = await jget("/api/dashboard");
+    const [d, dv] = await Promise.all([jget("/api/dashboard"), jget("/api/devices")]);
+    renderCtl(dv.devices);
     const cs = {"Connected":["متصل ✅","var(--ok)"],"Disconnected":["مقطوع ⛔","var(--bad)"],"Connecting":["جارٍ…","var(--warn)"]};
     const wn = cs[d.wan?.ConnStatus] || [d.wan?.ConnStatus||"—","var(--tx)"];
     $("#stWan").innerHTML = `<span style="color:${wn[1]}">${esc(wn[0])}</span>`;
@@ -518,7 +520,8 @@ function downlimitHTML(g, r){
         <td>${fmtRate(+i.DownBandwidth)} <span class="mono">(${i.DownBandwidth})</span></td>
         <td>${badge(i.Enable==="1")}</td>
         <td><label class="switch"><input type="checkbox" class="dl-toggle" data-inst="${esc(i._InstID)}" ${i.Enable==="1"?"checked":""}><span class="slider"></span></label>
-          <button class="btn btn-sm red" style="margin-inline-start:8px" onclick="delRule('${esc(i._InstID)}')">🗑️</button></td></tr>`).join("")}
+          <button class="btn btn-sm ghost" style="margin-inline-start:6px" onclick="addRuleModal('${esc(i.DestMAC)}','${esc(i.Alias)}','${esc(i._InstID)}','${esc(i.DownBandwidth)}')">✏️</button>
+          <button class="btn btn-sm red" style="margin-inline-start:6px" onclick="delRule('${esc(i._InstID)}')">🗑️</button></td></tr>`).join("")}
       </table>` : '<div class="empty">لا قواعد — استخدم قوالب الأجهزة أو أضف يدوي</div>'}
       <div style="margin-top:16px"><button class="btn" onclick="addRuleModal()">➕ إضافة حد لجهاز</button></div></div>`;
 }
@@ -545,8 +548,8 @@ async function delRule(inst){
   await jpost("/api/qos/downlimit_rules",{action:"Delete",instId:inst});
   toast("اتمسحت 🗑️"); renderQos("downlimit");
 }
-function addRuleModal(mac, name){
-  $("#modalTitle").textContent = "➕ حد تنزيل لجهاز";
+function addRuleModal(mac, name, inst, bps){
+  $("#modalTitle").textContent = inst ? "✏️ تعديل حد "+(name||"") : "➕ حد تنزيل لجهاز";
   $("#modalErr").classList.add("hidden");
   $("#modalBody").innerHTML = `
     <div><label>اسم القاعدة</label><input class="txt" id="f_alias" style="width:100%" value="${esc(name||"حد جديد")}"></div>
@@ -554,24 +557,59 @@ function addRuleModal(mac, name){
       <option value="">— MAC يدوي —</option>
       ${devicesCache.map(d=>`<option value="${esc(d.mac)}" ${mac===d.mac?"selected":""}>${esc(d.name)} · ${esc(d.ip)}</option>`).join("")}
     </select></div>
-    <div><label>MAC</label><input class="txt" id="f_mac" style="width:100%" value="${esc(mac||"")}" placeholder="aa:bb:cc:dd:ee:ff"></div>
-    <div><label>السرعة (Mbps)</label><input class="txt" id="f_bw" type="number" min="1" max="100" style="width:100%" value="5"></div>
-    <button class="btn" onclick="saveNewRule()">إضافة</button>`;
+    <div><label>MAC</label><input class="txt" id="f_mac" style="width:100%" value="${esc(mac||"")}" placeholder="aa:bb:cc:dd:ee:ff" ${inst?"disabled":""}></div>
+    <div><label>السرعة (Mbps)</label><input class="txt" id="f_bw" type="number" min="1" max="100" style="width:100%" value="${inst?Math.round(+bps/1e6):5}"></div>
+    <button class="btn" onclick="saveNewRule('${esc(inst||"")}')">${inst?"💾 حفظ التعديل":"إضافة"}</button>`;
   $("#modal").classList.remove("hidden");
   $("#f_dev").onchange = e=>{ if(e.target.value) $("#f_mac").value = e.target.value; };
 }
-async function saveNewRule(){
+function editThrottle(mac, name, inst, bps){
+  addRuleModal(mac, name, inst, bps);
+}
+async function saveNewRule(inst){
   const alias = $("#f_alias").value.trim()||"حد";
   const mac = $("#f_mac").value.trim().toLowerCase();
   const bps = String((+$("#f_bw").value||1)*1e6);
   if(!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)){ $("#modalErr").textContent="MAC غير صحيح (مثال aa:bb:cc:dd:ee:ff)"; $("#modalErr").classList.remove("hidden"); return; }
-  const r = await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:"-1",fields:{
-    Alias:alias,Enable:"1",ManaType:"mac",DestMAC:mac,IPDest:"0.0.0.0",IPDestMask:"0.0.0.0",
-    DestDevIF:"DEV.BRIDGING.BR1.BRPORT2",DownBandwidth:bps}});
-  if(r.ok){ toast("تمت الإضافة ✅"); closeModal(); renderQos("downlimit"); }
+  const fields = {Alias:alias,Enable:"1",ManaType:"mac",DestMAC:mac,IPDest:"0.0.0.0",IPDestMask:"0.0.0.0",
+    DestDevIF:"DEV.BRIDGING.BR1.BRPORT2",DownBandwidth:bps};
+  const r = inst
+    ? await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:inst,fields})
+    : await jpost("/api/qos/downlimit_rules",{action:"Apply",instId:"-1",fields});
+  if(r.ok){ toast(inst?"تم التعديل ✅":"تمت الإضافة ✅"); closeModal(); renderQos("downlimit"); loadDash(); loadDevices(); }
   else { $("#modalErr").textContent="رفض: "+r.error; $("#modalErr").classList.remove("hidden"); }
 }
 
+/* ==================== CONTROL CENTER (dash) ==================== */
+function renderCtl(devs){
+  const throttled = devs.filter(d=>d.throttle && d.throttle.enable==="1" && +d.throttle.bps>0);
+  const paused = devs.filter(d=>d.throttle && d.throttle.enable==="0");
+  const blocked = devs.filter(d=>d.blocked);
+  const el = $("#ctlBody");
+  el.className = "";
+  if(!throttled.length && !blocked.length && !paused.length){
+    el.innerHTML = '<div class="empty">🕊️ مفيش أي جهاز مقيد أو محظور — الكل بيرفع راسه</div>';
+    $("#ctlCard").querySelector("h2").textContent = "🎛️ المخنّقون والمحظورون الآن";
+    return;
+  }
+  $("#ctlCard").querySelector("h2").textContent =
+    `🎛️ المخنّقون والمحظورون الآن (${throttled.length+blocked.length})`;
+  const chips = blocked.map(d=>`<span class="chip red" onclick="toggleBlock('${esc(d.mac)}',false)" title="اضغط لفك الحظر">⛔ ${esc(d.name)}</span>`).join("");
+  const rows = [...throttled, ...paused].map(d=>{
+    const on = d.throttle.enable==="1";
+    return `<div class="row"><div style="flex:1">
+      <div class="name">🐌 <b>${esc(d.name)}</b> — ${fmtRate(+d.throttle.bps)} ${badge(on,"مخنّق","متوقف")}</div>
+      <div class="mono">${esc(d.mac)} · ${esc(d.throttle.alias||"")}</div></div>
+      <button class="btn btn-sm ghost" onclick="addRuleModal('${esc(d.mac)}','${esc(d.name)}')">✏️ عدّل</button>
+      <button class="btn btn-sm ${on?"red":"green"}" onclick="removeThrottle('${esc(d.throttle.inst)}')">${on?"✂️ فك الخنق":"▶️ شغّل"}</button></div>`;
+  }).join("");
+  el.innerHTML = (chips?`<div class="chips" style="margin-bottom:8px">${chips}</div>`:"")+rows;
+}
+async function removeThrottle(inst){
+  const r = await jpost("/api/qos/downlimit_rules",{action:"Delete",instId:inst});
+  toast("اتشالت الخنقة ✂️✅");
+  loadDash(); loadDevices(); loadFeed();
+}
 /* ==================== DEVICES ==================== */
 async function loadDevices(){
   const b = $("#devBody"); b.className="load"; b.textContent="جارٍ التحميل";
@@ -588,11 +626,14 @@ async function loadDevices(){
           <div class="mono">${esc(x.mac)}${x.custom?" ✏️":""}</div></div></div></td>
         <td class="mono">${esc(x.ip)}</td>
         <td>${x.type==="wifi"?"📶 "+esc(x.ssid):x.type==="lan"?"🔌 كابل":"💾 USB"}</td>
-        <td>${x.blocked?'<span class="badge ban">⛔ محظور</span>':badge(true,"متصل")}</td>
+        <td>${x.blocked?'<span class="badge ban">⛔ محظور</span>':
+            (x.throttle&&x.throttle.enable==="1")?`<span class="badge warn">🐌 ${fmtRate(+x.throttle.bps)}</span>`:
+            (x.throttle)?'<span class="badge off">قاعدة متوقفة</span>':badge(true,"متصل")}</td>
         <td><div class="chips">
           <span class="chip" onclick="applyPreset('${esc(x.mac)}','gaming')" title="حد 2 ميجا للألعاب">🎮 2M</span>
           <span class="chip" onclick="applyPreset('${esc(x.mac)}','streaming')" title="حد 15 ميجا للستريمنج">🎬 15M</span>
           <span class="chip" onclick="applyPreset('${esc(x.mac)}','homework')" title="حد 8 ميجا للمذاكرة">📚 8M</span>
+          ${x.throttle?`<span class="chip" onclick="editThrottle('${esc(x.mac)}','${esc(x.name)}','${esc(x.throttle.inst)}','${esc(x.throttle.bps)}')">✏️ مخصص</span>`:""}
           <span class="chip red" onclick="applyPreset('${esc(x.mac)}','free')">✖️ بدون حد</span></div></td>
         <td style="white-space:nowrap">
           <button class="btn btn-sm" onclick="renameModal('${esc(x.mac)}','${esc(x.auto)}')" title="تسمية">✏️</button>

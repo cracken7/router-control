@@ -149,12 +149,33 @@ def api_devices():
             rules = _read("macfilter")
             banned = {r.get("MACAddress", "").lower() for r in rules["instances"]}
             policy = {p["_InstID"]: p.get("ACLPolicy") for p in pol["instances"]}
-            any_ban = "Ban" in policy.values()
+            mode = policy.get("DEV.WIFI.AP1", "Disabled")
             for d in devs:
-                d["blocked"] = bool(any_ban and d["mac"] in banned)
+                if mode == "Ban":
+                    d["blocked"] = d["mac"] in banned
+                elif mode == "Allow":
+                    d["blocked"] = d["mac"] not in banned  # whitelist: missing = off
+                else:
+                    d["blocked"] = False
+                d["acl_mode"] = mode
         except Exception:
             for d in devs:
                 d["blocked"] = False
+        # throttle map: downlimit rule per MAC
+        try:
+            dls = _read("downlimit_rules")["instances"]
+            tmap = {}
+            for r0 in dls:
+                m = r0.get("DestMAC", "").lower()
+                if m:
+                    tmap[m] = {"inst": r0["_InstID"], "alias": r0.get("Alias", ""),
+                               "bps": r0.get("DownBandwidth", "0"),
+                               "enable": r0.get("Enable", "0")}
+            for d in devs:
+                d["throttle"] = tmap.get(d["mac"])
+        except Exception:
+            for d in devs:
+                d["throttle"] = None
         return {"ok": True, "devices": devs}
     return cached("devices", fn)
 
